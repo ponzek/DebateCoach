@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Debate Coach — Devil's Advocate AI</title>
+  <meta name="description" content="Sharpen your thinking with an AI devil's advocate. Debate Coach challenges your beliefs constructively."/>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .hero {
+      text-align: center;
+      padding: 5rem 1.5rem 3rem;
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--gold-dim);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 0.35rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      color: var(--text-primary);
+    }
+    .hero-title em {
+      color: var(--gold);
+      font-style: italic;
+    }
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 540px;
+      margin: 0 auto 3rem;
+      line-height: 1.7;
+    }
+
+    .setup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 1.5rem;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+    @media (max-width: 680px) {
+      .setup-grid { grid-template-columns: 1fr; }
+    }
+
+    .topic-chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+    .topic-chip {
+      background: rgba(201,168,76,0.08);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.78rem;
+      color: var(--gold-light);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .topic-chip:hover { background: rgba(201,168,76,0.2); }
+    .topic-chip.selected { background: rgba(201,168,76,0.25); border-color: var(--gold); }
+
+    .conditions-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 1.2rem;
+      background: rgba(13,27,42,0.5);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+    .cond-row { display: flex; gap: 0.65rem; align-items: flex-start; }
+    .cond-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+    .cond-a .cond-dot { background: var(--green); }
+    .cond-b .cond-dot { background: var(--gold); }
+    .cond-c .cond-dot { background: #a78bfa; }
+    .cond-label { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+    .cond-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="site-logo">
+      <div class="site-logo-icon">⚖️</div>
+      <span class="site-logo-text">Debate<span>Coach</span></span>
+    </a>
+    <nav class="site-nav">
+      <a href="/" class="active">Home</a>
+      <a href="/admin.html">Research Dashboard</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-eyebrow">⚡ Group 44 · Spring 2026 · HCI Research Prototype</div>
+      <h1 class="hero-title">Challenge your thinking.<br/><em>Strengthen</em> your argument.</h1>
+      <p class="hero-subtitle">Debate Coach plays devil's advocate — not to beat you, but to help you think more critically. How well can an AI challenge you without making you defensive?</p>
+    </section>
+
+    <div class="setup-grid">
+      <!-- Left: Setup form -->
+      <div class="card card-gold">
+        <p class="section-title" style="font-size:1.2rem;">Start a Debate</p>
+        <p class="section-sub" style="margin-bottom:1.25rem;">Fill in your details, pick a topic, and dive in.</p>
+
+        <div class="form-group">
+          <label class="form-label" for="participantId">Participant ID</label>
+          <input class="form-input" type="text" id="participantId" placeholder="e.g. P01" autocomplete="off"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Topic</label>
+          <div class="topic-chip-group" id="topicChips">
+            <div class="topic-chip" data-topic="Social media should be banned for users under 16">Social media age limits</div>
+            <div class="topic-chip" data-topic="Universal Basic Income would help society">Universal Basic Income</div>
+            <div class="topic-chip" data-topic="AI will ultimately benefit humanity">AI benefiting humanity</div>
+            <div class="topic-chip" data-topic="College education is no longer worth the cost">College education value</div>
+            <div class="topic-chip" data-topic="Remote work is better than in-office work">Remote vs. in-office</div>
+            <div class="topic-chip" data-topic="Cancel culture does more harm than good">Cancel culture</div>
+          </div>
+          <input class="form-input" type="text" id="topicInput" placeholder="Or type your own topic…"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">AI Condition</label>
+          <div class="condition-grid">
+            <div class="condition-pill" data-condition="A" id="condA">
+              <div class="pill-letter">A</div>
+              <div class="pill-name">Vanilla</div>
+            </div>
+            <div class="condition-pill selected" data-condition="B" id="condB">
+              <div class="pill-letter">B</div>
+              <div class="pill-name">Prompted</div>
+            </div>
+            <div class="condition-pill" data-condition="C" id="condC">
+              <div class="pill-letter">C</div>
+              <div class="pill-name">Fine-tuned</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="startBtn" style="width:100%;justify-content:center;" onclick="startDebate()">
+          Begin Debate →
+        </button>
+        <p style="font-size:0.75rem;color:var(--text-muted);text-align:center;margin-top:0.75rem;">Debates require at least 3 exchanges before ending.</p>
+      </div>
+
+      <!-- Right: Info panel -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="card">
+          <p style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:0.75rem;">📋 Study Conditions</p>
+          <div class="conditions-legend">
+            <div class="cond-row cond-a">
+              <div class="cond-dot"></div>
+              <div>
+                <div class="cond-label">A — Vanilla GPT-4o</div>
+                <div class="cond-desc">No special instructions. Baseline behavior for comparison.</div>
+              </div>
+            </div>
+            <div class="cond-row cond-b">
+              <div class="cond-dot"></div>
+              <div>
+                <div class="cond-label">B — Prompted Devil's Advocate</div>
+                <div class="cond-desc">Engineered system prompt guiding the AI to challenge constructively without straw-manning.</div>
+              </div>
+            </div>
+            <div class="cond-row cond-c">
+              <div class="cond-dot"></div>
+              <div>
+                <div class="cond-label">C — Adapted Model</div>
+                <div class="cond-desc">Fine-tuned on high-quality debate transcripts for deeper, more principled challenges.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <p style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:0.5rem;">🔬 About this Study</p>
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">This is a within-subjects pilot study — you'll complete all three conditions across separate sessions in counterbalanced order. After each debate, you'll rate stance reconsideration, fairness, helpfulness, and frustration on a 1–5 scale.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let selectedCondition = 'B';
+    let selectedTopic = '';
+
+    // Condition pills
+    document.querySelectorAll('.condition-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.condition-pill').forEach(p => p.classList.remove('selected'));
+        pill.classList.add('selected');
+        selectedCondition = pill.dataset.condition;
+      });
+    });
+
+    // Topic chips
+    document.querySelectorAll('.topic-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedTopic = chip.dataset.topic;
+        document.getElementById('topicInput').value = selectedTopic;
+      });
+    });
+
+    document.getElementById('topicInput').addEventListener('input', e => {
+      selectedTopic = e.target.value;
+      document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('selected'));
+    });
+
+    function startDebate() {
+      const participantId = document.getElementById('participantId').value.trim();
+      const topic = document.getElementById('topicInput').value.trim() || selectedTopic;
+
+      if (!participantId) { alert('Please enter a Participant ID.'); return; }
+      if (!topic) { alert('Please select or enter a debate topic.'); return; }
+
+      const sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      const state = { sessionId, participantId, topic, condition: selectedCondition, startedAt: new Date().toISOString() };
+      localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
+      window.location.href = '/debate.html?s=' + sessionId;
+    }
+  </script>
+</body>
+</html>

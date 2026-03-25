@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reflection — Debate Coach</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .reflect-layout { max-width: 680px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .step-header { margin-bottom: 2rem; }
+    .step-section { display: none; }
+    .step-section.active { display: block; animation: fadeSlideIn 0.3s ease; }
+
+    .survey-question {
+      background: rgba(13,27,42,0.5);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .survey-q-text {
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      font-style: italic;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+    .likert-container { display: flex; flex-direction: column; gap: 0.4rem; }
+    .likert-options { display: flex; gap: 0.5rem; justify-content: space-between; }
+    .likert-labels-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .loading-overlay {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-secondary);
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-subtle);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .nav-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="site-logo">
+      <div class="site-logo-icon">⚖️</div>
+      <span class="site-logo-text">Debate<span>Coach</span></span>
+    </a>
+    <nav class="site-nav">
+      <span id="conditionBadge" class="badge badge-b">Condition B</span>
+    </nav>
+  </header>
+
+  <div class="reflect-layout">
+    <div class="step-header">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="flex-between">
+        <div>
+          <div class="section-title" id="stepTitle">Reviewing Counterarguments</div>
+          <div class="section-sub" id="stepSub">Step 1 of 3</div>
+        </div>
+        <div id="condBadge2" class="badge badge-b" style="align-self:flex-start;"></div>
+      </div>
+    </div>
+
+    <!-- Step 1: AI counterargument summary -->
+    <div class="step-section active" id="step1">
+      <div class="card mb-2">
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">
+          ⚖️ Based on your debate transcript, here are the <strong style="color:var(--gold)">3 strongest counterarguments</strong> the AI raised against your position:
+        </p>
+        <div id="counterargsList">
+          <div class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>Analyzing your debate transcript…</p>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <span></span>
+        <button class="btn btn-primary" id="toStep2Btn" onclick="goToStep(2)" disabled>Continue to Survey →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Likert survey -->
+    <div class="step-section" id="step2">
+      <div class="card mb-2">
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.25rem;">Rate your experience with this debate on a <strong style="color:var(--gold)">1–5 scale</strong> (1 = Strongly Disagree, 5 = Strongly Agree).</p>
+
+        <div class="survey-question">
+          <div class="survey-q-text">"The AI prompted me to rethink my original belief."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-stance"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+
+        <div class="survey-question">
+          <div class="survey-q-text">"The AI argued in good faith and engaged with my actual claims."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-fairness"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+
+        <div class="survey-question">
+          <div class="survey-q-text">"The interaction helped me understand the opposing view better."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-helpfulness"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+
+        <div class="survey-question">
+          <div class="survey-q-text">"The AI was pushy, repetitive, or hostile."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-frustration"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(1)">← Back</button>
+        <button class="btn btn-primary" id="toStep3Btn" onclick="goToStep(3)" disabled>Continue →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Open response -->
+    <div class="step-section" id="step3">
+      <div class="card mb-2">
+        <div class="form-group">
+          <label class="form-label">Open Reflection <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(optional)</span></label>
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;">What would have made this debate more useful or fair?</p>
+          <textarea class="form-textarea" id="openResponse" placeholder="Share any thoughts on what worked, what didn't, or how the AI could improve…" style="min-height:130px;"></textarea>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(2)">← Back</button>
+        <button class="btn btn-primary" id="submitBtn" onclick="submitSurvey()">Submit &amp; Finish ✓</button>
+      </div>
+    </div>
+
+    <!-- Submitting state -->
+    <div class="step-section" id="stepSubmitting">
+      <div class="loading-overlay" style="padding:4rem 1rem;">
+        <div class="loading-spinner"></div>
+        <p style="color:var(--text-primary);font-weight:600;margin-bottom:0.5rem;">Saving your session…</p>
+        <p style="color:var(--text-secondary);font-size:0.85rem;">Running automated analysis. This may take a moment.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const sessionId = params.get('s');
+    const state = JSON.parse(localStorage.getItem('debate_session_' + sessionId) || '{}');
+
+    const condLabels = { A: 'Condition A — Vanilla', B: 'Condition B — Prompted', C: 'Condition C — Fine-tuned' };
+    const condClasses = { A: 'badge-a', B: 'badge-b', C: 'badge-c' };
+    document.getElementById('conditionBadge').textContent = condLabels[state.condition] || '';
+    document.getElementById('conditionBadge').className = `badge ${condClasses[state.condition] || 'badge-b'}`;
+    document.getElementById('condBadge2').textContent = condLabels[state.condition] || '';
+    document.getElementById('condBadge2').className = `badge ${condClasses[state.condition] || 'badge-b'}`;
+
+    const survey = { stanceReconsideration: 0, perceivedFairness: 0, helpfulness: 0, frustration: 0 };
+    let counterarguments = [];
+    let currentStep = 1;
+
+    const steps = [
+      { id: 1, title: 'Reviewing Counterarguments', sub: 'Step 1 of 3', progress: 33 },
+      { id: 2, title: 'Rate Your Experience', sub: 'Step 2 of 3', progress: 66 },
+      { id: 3, title: 'Open Reflection', sub: 'Step 3 of 3', progress: 90 },
+    ];
+
+    function goToStep(n) {
+      document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('step' + n)?.classList.add('active');
+      currentStep = n;
+      const info = steps.find(s => s.id === n);
+      if (info) {
+        document.getElementById('stepTitle').textContent = info.title;
+        document.getElementById('stepSub').textContent = info.sub;
+        document.getElementById('progressFill').style.width = info.progress + '%';
+      }
+      window.scrollTo(0, 0);
+    }
+
+    // Build Likert widgets
+    function buildLikert(containerId, key) {
+      const container = document.getElementById(containerId);
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'likert-btn';
+        btn.textContent = i;
+        btn.onclick = () => {
+          document.querySelectorAll(`#${containerId} .likert-btn`).forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          survey[key] = i;
+          checkSurveyComplete();
+        };
+        container.appendChild(btn);
+      }
+    }
+
+    buildLikert('likert-stance', 'stanceReconsideration');
+    buildLikert('likert-fairness', 'perceivedFairness');
+    buildLikert('likert-helpfulness', 'helpfulness');
+    buildLikert('likert-frustration', 'frustration');
+
+    function checkSurveyComplete() {
+      const complete = survey.stanceReconsideration && survey.perceivedFairness && survey.helpfulness && survey.frustration;
+      document.getElementById('toStep3Btn').disabled = !complete;
+    }
+
+    // Load counterarguments
+    async function loadCounterarguments() {
+      try {
+        const resp = await fetch('/api/reflect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: state.messages || [], topic: state.topic })
+        });
+        const data = await resp.json();
+        counterarguments = data.counterarguments || [];
+        renderCounterargs();
+      } catch (err) {
+        document.getElementById('counterargsList').innerHTML =
+          `<p style="color:var(--red);font-size:0.85rem;">⚠️ Could not load counterarguments: ${err.message}</p>`;
+        document.getElementById('toStep2Btn').disabled = false;
+      }
+    }
+
+    function renderCounterargs() {
+      const container = document.getElementById('counterargsList');
+      container.innerHTML = '';
+      counterarguments.forEach((arg, i) => {
+        const div = document.createElement('div');
+        div.className = 'counter-card mt-1';
+        div.innerHTML = `
+          <div class="counter-number">${i + 1}</div>
+          <div style="font-size:0.9rem;color:var(--text-primary);line-height:1.55;">${arg}</div>`;
+        container.appendChild(div);
+      });
+      document.getElementById('toStep2Btn').disabled = false;
+    }
+
+    async function submitSurvey() {
+      document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('stepSubmitting').classList.add('active');
+      document.getElementById('progressFill').style.width = '100%';
+
+      const openResponse = document.getElementById('openResponse').value.trim();
+
+      // Run judge + metrics in parallel
+      const [judgeResp, metricsResp] = await Promise.allSettled([
+        fetch('/api/judge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: state.messages || [], topic: state.topic, condition: state.condition })
+        }).then(r => r.json()),
+        fetch('/api/metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: state.messages || [] })
+        }).then(r => r.json())
+      ]);
+
+      const judgeScores = judgeResp.status === 'fulfilled' ? judgeResp.value : null;
+      const argQualityMetrics = metricsResp.status === 'fulfilled' ? metricsResp.value : null;
+
+      const fullSession = {
+        participantId: state.participantId,
+        topic: state.topic,
+        condition: state.condition,
+        messages: state.messages || [],
+        counterarguments,
+        survey: { ...survey, openResponse },
+        judgeScores,
+        argQualityMetrics,
+        startedAt: state.startedAt,
+        endedAt: state.endedAt || new Date().toISOString()
+      };
+
+      try {
+        const saveResp = await fetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(fullSession)
+        });
+        const { sessionId: savedId } = await saveResp.json();
+        window.location.href = '/complete.html?s=' + savedId;
+      } catch (err) {
+        alert('Error saving session: ' + err.message);
+      }
+    }
+
+    loadCounterarguments();
+  </script>
+</body>
+</html>

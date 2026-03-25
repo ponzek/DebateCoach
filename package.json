@@ -1,0 +1,16 @@
+{
+  "name": "debate-coach",
+  "version": "1.0.0",
+  "description": "Debate Coach — Devil's Advocate AI Research Prototype",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "openai": "^4.28.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1"
+  }
+}
