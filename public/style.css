@@ -29,7 +29,7 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -37,6 +37,7 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
+  overflow-x: hidden;
   background-image:
     radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 80%, rgba(36,59,85,0.8) 0%, transparent 60%);
@@ -65,12 +66,12 @@ body {
 .site-logo-icon {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--gold), var(--gold-light));
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 .site-logo-text {
   font-family: 'Playfair Display', serif;
@@ -471,3 +472,26 @@ body {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Responsive overflow guard ── */
+img, svg, video, canvas, audio, iframe, embed, object {
+  max-width: 100%;
+}
+
+/* ── Nav link active state cleaner ── */
+.site-nav a.active { color: var(--gold); }
+
+/* ── Subtle nav group label ── */
+.site-nav .nav-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-right: 1px solid var(--border-subtle);
+  padding-right: 1.25rem;
+  margin-right: 0.25rem;
+}
+
+/* ── Red border for required field error state ── */
+.field-error { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(224,92,92,0.12) !important; }
+
+/* ── Smooth transitions for condition step indicators ── */
+.cond-step { transition: background 0.25s, border-color 0.25s, color 0.25s; }

@@ -11,12 +11,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = join(__dirname, 'data', 'sessions.json');
+const COUNTER_FILE = join(__dirname, 'data', 'participant_counter.json');
 
-// Ensure data file exists
+// Ensure data directory and files exist
 import { mkdirSync } from 'fs';
 try {
   mkdirSync(join(__dirname, 'data'), { recursive: true });
   if (!existsSync(DATA_FILE)) writeFileSync(DATA_FILE, '[]', 'utf8');
+  if (!existsSync(COUNTER_FILE)) writeFileSync(COUNTER_FILE, '{"count":0}', 'utf8');
 } catch (e) { /* already exists */ }
 
 const openai = new OpenAI({
@@ -28,21 +30,21 @@ app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(join(__dirname, 'public')));
 
-// ─── System Prompts ──────────────────────────────────────────────────────────
+// System Prompts
 const SYSTEM_PROMPTS = {
   A: `You are a conversational AI assistant. Engage with the user's debate topic naturally.`,
 
-  B: `You are "Debate Coach," a rigorous devil's advocate. Your role is NOT to win the argument — it is to strengthen the user's critical thinking by presenting the strongest possible counterarguments to whatever position they defend.
+  B: `You are "Debate Coach," a rigorous devil's advocate. Your role is NOT to win the argument - it is to strengthen the user's critical thinking by presenting the strongest possible counterarguments to whatever position they defend.
 
 Rules:
 1. Always argue the opposite of the user's stated position, even if you personally agree with them.
 2. Never straw-man. Engage directly with the user's actual stated claims.
 3. Use Socratic questions to expose unstated assumptions.
-4. Present ONE clear, well-reasoned counterargument per turn — do not pepper the user with multiple points.
+4. Present ONE clear, well-reasoned counterargument per turn - do not pepper the user with multiple points.
 5. Acknowledge strong points the user makes before pivoting to your counterpoint.
 6. Remain calm, respectful, and intellectually fair at all times.
 7. Do not moralize or lecture. Stay argument-focused.
-8. Keep responses concise (2–4 sentences max) so the debate stays dynamic.
+8. Keep responses concise (2-4 sentences max) so the debate stays dynamic.
 
 Your goal: help the user refine their thinking, not defeat them.`,
 
@@ -50,7 +52,7 @@ Your goal: help the user refine their thinking, not defeat them.`,
 
 Approach:
 - Identify the core inferential structure of the user's argument before countering it.
-- Counter at the level of principle, evidence, or logical implication — not surface rhetoric.
+- Counter at the level of principle, evidence, or logical implication - not surface rhetoric.
 - Practice steelmanning: acknowledge the strongest version of their view, then target its weakest point.
 - Use one crisp counterargument per turn; follow up with a probing question.
 - Mirror the user's vocabulary and frame to keep arguments grounded in their own terms.
@@ -60,13 +62,30 @@ Approach:
 Goal: foster genuine reconsideration, not defensiveness.`
 };
 
-// Helper: strip markdown code fences Blackbox sometimes wraps around JSON
 function parseJSON(raw) {
   const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
   return JSON.parse(cleaned);
 }
 
-// ─── /api/chat (streaming) ───────────────────────────────────────────────────
+// Atomically get and increment participant counter - never resets
+function getNextParticipantId() {
+  const data = JSON.parse(readFileSync(COUNTER_FILE, 'utf8'));
+  data.count += 1;
+  writeFileSync(COUNTER_FILE, JSON.stringify(data), 'utf8');
+  return `P${data.count}`;
+}
+
+// GET /api/next-participant-id - auto-assigns next ID
+app.get('/api/next-participant-id', (req, res) => {
+  try {
+    const participantId = getNextParticipantId();
+    res.json({ participantId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/chat (streaming)
 app.post('/api/chat', async (req, res) => {
   const { messages, topic, condition } = req.body;
   if (!messages || !condition) return res.status(400).json({ error: 'Missing fields' });
@@ -104,7 +123,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// ─── /api/reflect ────────────────────────────────────────────────────────────
+// POST /api/reflect
 app.post('/api/reflect', async (req, res) => {
   const { messages, topic } = req.body;
   const transcript = messages
@@ -113,10 +132,10 @@ app.post('/api/reflect', async (req, res) => {
 
   try {
     const resp = await openai.chat.completions.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-sonnet-4-5-20250514',
       messages: [{
         role: 'system',
-        content: `You are a debate analyst. Given this debate transcript on the topic "${topic}", extract exactly 3 of the strongest counterarguments that the AI raised. Return JSON: { "counterarguments": ["arg1", "arg2", "arg3"] }. Each should be 1–2 sentences, precise, and directly challenging the participant's position.`
+        content: `You are a debate analyst. Given this debate transcript on the topic "${topic}", extract exactly 3 of the strongest counterarguments that the AI raised. Return JSON: { "counterarguments": ["arg1", "arg2", "arg3"] }. Each should be 1-2 sentences, precise, and directly challenging the participant's position.`
       }, {
         role: 'user',
         content: transcript
@@ -131,7 +150,7 @@ app.post('/api/reflect', async (req, res) => {
   }
 });
 
-// ─── /api/judge ──────────────────────────────────────────────────────────────
+// POST /api/judge
 app.post('/api/judge', async (req, res) => {
   const { messages, topic, condition } = req.body;
   const transcript = messages
@@ -140,7 +159,7 @@ app.post('/api/judge', async (req, res) => {
 
   try {
     const resp = await openai.chat.completions.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-sonnet-4-5-20250514',
       messages: [{
         role: 'system',
         content: `You are an expert debate evaluator. Rate this AI debate transcript on each property from 1 (very poor) to 5 (excellent). Return JSON with this exact shape:
@@ -172,7 +191,7 @@ Definitions:
   }
 });
 
-// ─── /api/metrics ────────────────────────────────────────────────────────────
+// POST /api/metrics
 app.post('/api/metrics', async (req, res) => {
   const { messages } = req.body;
   const aiTurns = messages.filter(m => m.role === 'assistant').map(m => m.content);
@@ -181,7 +200,6 @@ app.post('/api/metrics', async (req, res) => {
     return res.json({ argumentDiversity: null, topicalRelevance: null, repetitionRate: null });
   }
 
-  // Simple TF-IDF style cosine similarity approximation using word overlap
   function tokenize(text) {
     return text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
   }
@@ -210,7 +228,6 @@ app.post('/api/metrics', async (req, res) => {
       }
       return grams;
     }
-    // Average pairwise bigram overlap between AI turns
     let total = 0, count = 0;
     for (let i = 0; i < turns.length; i++) {
       for (let j = i + 1; j < turns.length; j++) {
@@ -224,14 +241,12 @@ app.post('/api/metrics', async (req, res) => {
     return count > 0 ? total / count : 0;
   }
 
-  // Argument diversity: average cosine DISTANCE between successive AI turns
   let divSum = 0;
   for (let i = 0; i < aiTurns.length - 1; i++) {
     divSum += (1 - cosineSim(aiTurns[i], aiTurns[i + 1]));
   }
   const argumentDiversity = divSum / (aiTurns.length - 1);
 
-  // Topical relevance: average cosine similarity between user turn and following AI turn
   const pairs = [];
   for (let i = 0; i < messages.length - 1; i++) {
     if (messages[i].role === 'user' && messages[i + 1]?.role === 'assistant') {
@@ -239,8 +254,6 @@ app.post('/api/metrics', async (req, res) => {
     }
   }
   const topicalRelevance = pairs.length > 0 ? pairs.reduce((a, b) => a + b, 0) / pairs.length : null;
-
-  // Repetition rate: n-gram overlap across AI turns
   const repetitionRate = ngramOverlap(aiTurns);
 
   res.json({
@@ -250,7 +263,7 @@ app.post('/api/metrics', async (req, res) => {
   });
 });
 
-// ─── /api/sessions ───────────────────────────────────────────────────────────
+// POST /api/sessions
 app.post('/api/sessions', (req, res) => {
   const session = { sessionId: randomUUID(), ...req.body, savedAt: new Date().toISOString() };
   const sessions = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
@@ -264,32 +277,71 @@ app.get('/api/sessions', (req, res) => {
   res.json(sessions);
 });
 
-// ─── /api/export ─────────────────────────────────────────────────────────────
+// GET /api/export - properly formatted CSV
 app.get('/api/export', (req, res) => {
   const sessions = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
+
+  function csvCell(val) {
+    if (val == null) return '';
+    const str = String(val);
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString('en-US', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: true
+      });
+    } catch { return iso; }
+  }
+
   const headers = [
-    'sessionId','participantId','topic','condition','startedAt','endedAt',
-    'stanceReconsideration','perceivedFairness','helpfulness','frustration','openResponse',
-    'judgeCounterargumentStrength','judgeEngagementWithArguments','judgeFairness',
-    'judgePersuasiveAppeal','judgeConstructiveAppeal','judgeJustification',
-    'argDiversity','argTopicalRelevance','argRepetitionRate','messageCount'
+    'Session ID', 'Participant ID', 'Topic', 'Condition', 'Condition Name',
+    'Started At', 'Ended At', 'Message Count',
+    'Stance Reconsideration (1-5)', 'Perceived Fairness (1-5)', 'Helpfulness (1-5)', 'Frustration (1-5)',
+    'Open Response',
+    'Judge: Counterargument Strength', 'Judge: Engagement w/ Arguments', 'Judge: Fairness',
+    'Judge: Persuasive Appeal', 'Judge: Constructive Appeal', 'Judge: Justification',
+    'Arg Diversity (0-1)', 'Topical Relevance (0-1)', 'Repetition Rate (0-1)'
   ];
+
+  const condNames = { A: 'Vanilla', B: 'Prompted Devils Advocate', C: 'Fine-tuned' };
+
   const rows = sessions.map(s => [
-    s.sessionId, s.participantId, `"${(s.topic||'').replace(/"/g,'""')}"`, s.condition,
-    s.startedAt, s.endedAt,
-    s.survey?.stanceReconsideration, s.survey?.perceivedFairness,
-    s.survey?.helpfulness, s.survey?.frustration,
-    `"${(s.survey?.openResponse||'').replace(/"/g,'""')}"`,
-    s.judgeScores?.counterargumentStrength, s.judgeScores?.engagementWithArguments,
-    s.judgeScores?.fairness, s.judgeScores?.persuasiveAppeal, s.judgeScores?.constructiveAppeal,
-    `"${(s.judgeScores?.justification||'').replace(/"/g,'""')}"`,
-    s.argQualityMetrics?.argumentDiversity, s.argQualityMetrics?.topicalRelevance,
-    s.argQualityMetrics?.repetitionRate, s.messages?.length
-  ]);
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename="debate_coach_sessions.csv"');
-  res.send(csv);
+    s.sessionId,
+    s.participantId,
+    s.topic,
+    s.condition,
+    condNames[s.condition] || s.condition,
+    fmtDate(s.startedAt),
+    fmtDate(s.endedAt),
+    (s.messages || []).length,
+    s.survey?.stanceReconsideration,
+    s.survey?.perceivedFairness,
+    s.survey?.helpfulness,
+    s.survey?.frustration,
+    s.survey?.openResponse,
+    s.judgeScores?.counterargumentStrength,
+    s.judgeScores?.engagementWithArguments,
+    s.judgeScores?.fairness,
+    s.judgeScores?.persuasiveAppeal,
+    s.judgeScores?.constructiveAppeal,
+    s.judgeScores?.justification,
+    s.argQualityMetrics?.argumentDiversity,
+    s.argQualityMetrics?.topicalRelevance,
+    s.argQualityMetrics?.repetitionRate
+  ].map(csvCell));
+
+  const csv = [headers.map(csvCell).join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="debate_coach_export_${new Date().toISOString().split('T')[0]}.csv"`);
+  // BOM for Excel compatibility
+  res.send('\uFEFF' + csv);
 });
 
-app.listen(PORT, () => console.log(`\n🎤 Debate Coach running at http://localhost:${PORT}\n`));
+app.listen(PORT, () => console.log(`Debate Coach running at http://localhost:${PORT}`));

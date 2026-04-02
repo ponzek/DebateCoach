@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debate — Debate Coach</title>
+  <title>Debate - Debate Coach</title>
   <link rel="stylesheet" href="/style.css"/>
   <style>
-    body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    .debate-layout { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    html, body { overflow: hidden; height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    .debate-layout { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+
     .debate-topbar {
-      background: rgba(13,27,42,0.9);
+      background: rgba(13,27,42,0.95);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 0.85rem 1.5rem;
+      padding: 0.75rem 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -20,61 +23,113 @@
     }
     .topic-display {
       font-family: 'Playfair Display', serif;
-      font-size: 1rem;
+      font-size: 0.95rem;
       color: var(--text-primary);
       font-style: italic;
-      max-width: 500px;
+      max-width: 420px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+    .exchange-counter {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .exchange-counter strong { color: var(--gold); }
+
+    /* Condition progress indicator */
+    .condition-progress {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .cond-step {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .cond-step.done { background: rgba(76,175,130,0.2); border-color: var(--green); color: var(--green); }
+    .cond-step.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+    .cond-step-line { width: 12px; height: 1.5px; background: var(--border-subtle); }
+
+    /* Chat area */
     .chat-area {
       flex: 1;
       overflow-y: auto;
-      padding: 1.5rem;
+      overflow-x: hidden;
+      padding: 2rem 1rem 1rem;
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      min-height: 0;
     }
-    .chat-area::-webkit-scrollbar { width: 5px; }
+    .chat-area::-webkit-scrollbar { width: 4px; }
     .chat-area::-webkit-scrollbar-track { background: transparent; }
-    .chat-area::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
 
-    .chat-input-bar {
-      background: rgba(13,27,42,0.95);
-      border-top: 1px solid var(--border-subtle);
-      padding: 1rem 1.5rem;
-      display: flex;
-      gap: 0.75rem;
-      align-items: flex-end;
+    /* ChatGPT-style input bar - centered with margins */
+    .chat-input-zone {
       flex-shrink: 0;
+      padding: 1rem 1.5rem 1.5rem;
+      background: linear-gradient(to top, rgba(13,27,42,1) 60%, rgba(13,27,42,0));
+    }
+    .chat-input-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      background: rgba(26,45,66,0.9);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .chat-input-inner:focus-within {
+      border-color: rgba(201,168,76,0.4);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 0 0 3px rgba(201,168,76,0.08);
     }
     .chat-input {
-      flex: 1;
-      background: rgba(26,45,66,0.8);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      width: 100%;
+      background: transparent;
+      border: none;
       color: var(--text-primary);
       font-family: 'Inter', sans-serif;
-      font-size: 0.93rem;
-      padding: 0.75rem 1.1rem;
+      font-size: 0.95rem;
+      padding: 1rem 1.1rem 0.5rem;
       outline: none;
       resize: none;
-      max-height: 140px;
-      min-height: 44px;
-      line-height: 1.5;
-      transition: border-color 0.2s;
+      min-height: 56px;
+      max-height: 180px;
+      line-height: 1.55;
     }
-    .chat-input:focus { border-color: var(--gold); }
     .chat-input::placeholder { color: var(--text-muted); }
-
+    .chat-input-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.7rem 0.5rem 1.1rem;
+    }
+    .input-hint {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
     .send-btn {
-      width: 44px; height: 44px;
-      border-radius: 50%;
+      width: 36px; height: 36px;
+      border-radius: 10px;
       border: none;
       background: linear-gradient(135deg, var(--gold), var(--gold-light));
       color: var(--navy);
-      font-size: 1.1rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -82,73 +137,161 @@
       transition: all 0.2s;
       flex-shrink: 0;
     }
-    .send-btn:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(201,168,76,0.35); }
-    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .send-btn:hover { transform: scale(1.06); box-shadow: 0 4px 14px rgba(201,168,76,0.4); }
+    .send-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
 
-    .exchange-counter {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-    .exchange-counter span { color: var(--gold); font-weight: 700; }
+    /* Message avatars - SVG based */
+    .message-avatar { font-size: 0; }
 
+    /* Welcome */
     .welcome-msg {
       text-align: center;
-      padding: 2rem 1rem;
+      padding: 3rem 1.5rem;
       color: var(--text-secondary);
+      max-width: 480px;
+      margin: 0 auto;
     }
     .welcome-msg h2 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       color: var(--text-primary);
       margin-bottom: 0.5rem;
     }
+    .welcome-msg p { font-size: 0.88rem; line-height: 1.6; }
 
-    .end-debate-wrap {
-      text-align: center;
-      padding: 0.5rem 0 0.25rem;
+    /* End / transition buttons */
+    .end-btn-disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+    /* Transition overlay */
+    .transition-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(13,27,42,0.97);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
     }
-    .btn-end-disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-      pointer-events: none;
+    .transition-overlay.visible { display: flex; }
+    .transition-card {
+      background: rgba(26,45,66,0.9);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      max-width: 440px;
+      width: 90%;
+      text-align: center;
+    }
+    .transition-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      margin: 0 auto 1.25rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .transition-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    .transition-sub { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.55; }
+    .next-cond-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--gold-dim); border: 1px solid var(--border);
+      border-radius: 99px; padding: 0.3rem 0.9rem;
+      font-size: 0.8rem; font-weight: 700; color: var(--gold);
+      margin-bottom: 1.5rem;
     }
   </style>
 </head>
 <body>
   <header class="site-header">
     <a href="/" class="site-logo">
-      <div class="site-logo-icon">⚖️</div>
+      <div class="site-logo-icon">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="10" fill="url(#lg2)"/>
+          <line x1="18" y1="8" x2="18" y2="26" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="11" y1="28" x2="25" y2="28" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="18" y1="11" x2="10" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="18" y1="11" x2="26" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M6 15 Q10 22 14 15" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M22 15 Q26 22 30 15" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="lg2" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#c9a84c"/><stop offset="1" stop-color="#e8c76a"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
       <span class="site-logo-text">Debate<span>Coach</span></span>
     </a>
     <nav class="site-nav">
-      <span id="conditionBadge" class="badge badge-b">Condition B</span>
-      <a href="/" class="btn btn-ghost" style="padding:0.4rem 0.9rem;font-size:0.8rem;">← New Debate</a>
+      <span id="conditionBadge" class="badge badge-a">Condition A</span>
+      <a href="/" class="btn btn-ghost" style="padding:0.35rem 0.8rem;font-size:0.8rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        New Debate
+      </a>
     </nav>
   </header>
 
   <div class="debate-layout">
     <div class="debate-topbar">
       <div>
-        <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Topic</div>
-        <div class="topic-display" id="topicDisplay">Loading…</div>
+        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Topic</div>
+        <div class="topic-display" id="topicDisplay">Loading...</div>
       </div>
-      <div style="display:flex;align-items:center;gap:1rem;">
-        <div class="exchange-counter">Exchanges: <span id="exchangeCount">0</span>/3 min</div>
-        <button class="btn btn-danger btn-end-disabled" id="endBtn" onclick="endDebate()">End Debate ⟶</button>
+      <div class="topbar-right">
+        <!-- Condition progress steps -->
+        <div class="condition-progress" id="condProgress">
+          <div class="cond-step" id="stepA">A</div>
+          <div class="cond-step-line"></div>
+          <div class="cond-step" id="stepB">B</div>
+          <div class="cond-step-line"></div>
+          <div class="cond-step" id="stepC">C</div>
+        </div>
+        <div class="exchange-counter">Exchanges: <strong id="exchangeCount">0</strong>/5</div>
+        <button class="btn btn-danger end-btn-disabled" id="endBtn" onclick="endCurrentCondition()">
+          End Condition
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
       </div>
     </div>
 
     <div class="chat-area" id="chatArea">
       <div class="welcome-msg" id="welcomeMsg">
         <h2>Your debate partner is ready.</h2>
-        <p>State your position on the topic and the AI will argue the other side.<br/>Challenge it — it's here to make you think harder.</p>
+        <p>State your position on the topic and the AI will argue the other side. Challenge it - it's here to make you think harder.</p>
       </div>
     </div>
 
-    <div class="chat-input-bar">
-      <textarea class="chat-input" id="chatInput" placeholder="State your argument…" rows="1" onkeydown="handleKey(event)"></textarea>
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">➤</button>
+    <!-- ChatGPT-style centered input -->
+    <div class="chat-input-zone">
+      <div class="chat-input-inner">
+        <textarea class="chat-input" id="chatInput" placeholder="State your argument..." rows="2" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <div class="chat-input-footer">
+          <span class="input-hint">Shift+Enter for new line</span>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send message" aria-label="Send message">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Condition transition overlay -->
+  <div class="transition-overlay" id="transitionOverlay">
+    <div class="transition-card">
+      <div class="transition-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="transition-title" id="transTitle">Condition A Complete</div>
+      <div class="transition-sub" id="transSub">Great work. Take a moment before the next round.</div>
+      <div class="next-cond-badge" id="nextCondBadge">Up next: Condition B - Prompted</div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="continueToNext()">
+        Continue to Next Condition
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
     </div>
   </div>
 
@@ -156,31 +299,74 @@
     const params = new URLSearchParams(location.search);
     const sessionId = params.get('s');
     const state = JSON.parse(localStorage.getItem('debate_session_' + sessionId) || '{}');
+    const participantState = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+
+    const REQUIRED_EXCHANGES = 5;
+    const CONDITION_ORDER = ['A', 'B', 'C'];
+    const COND_NAMES = { A: 'Vanilla', B: 'Prompted', C: 'Fine-tuned' };
+    const COND_BADGES = { A: 'badge-a', B: 'badge-b', C: 'badge-c' };
+    const COND_LABELS = { A: 'Condition A - Vanilla', B: 'Condition B - Prompted', C: 'Condition C - Fine-tuned' };
 
     let messages = [];
     let exchanges = 0;
     let isStreaming = false;
+    let currentCondition = state.condition || 'A';
+    let completedSessionId = null;
 
     // Init UI
     document.getElementById('topicDisplay').textContent = `"${state.topic || 'Unknown topic'}"`;
-    const condBadge = document.getElementById('conditionBadge');
-    const condLabels = { A: 'Condition A — Vanilla', B: 'Condition B — Prompted', C: 'Condition C — Fine-tuned' };
-    const condClasses = { A: 'badge-a', B: 'badge-b', C: 'badge-c' };
-    condBadge.textContent = condLabels[state.condition] || 'Unknown';
-    condBadge.className = `badge ${condClasses[state.condition] || 'badge-b'}`;
+    updateConditionBadge(currentCondition);
+    updateProgressSteps(participantState.conditionsDone || []);
 
-    // Auto-resize textarea
-    const input = document.getElementById('chatInput');
-    input.addEventListener('input', () => {
-      input.style.height = 'auto';
-      input.style.height = Math.min(input.scrollHeight, 140) + 'px';
-    });
+    function updateConditionBadge(cond) {
+      const badge = document.getElementById('conditionBadge');
+      badge.textContent = COND_LABELS[cond] || cond;
+      badge.className = `badge ${COND_BADGES[cond] || 'badge-a'}`;
+    }
+
+    function updateProgressSteps(done) {
+      CONDITION_ORDER.forEach(c => {
+        const el = document.getElementById('step' + c);
+        if (!el) return;
+        el.classList.remove('done', 'active');
+        if (done.includes(c)) el.classList.add('done');
+        else if (c === currentCondition) el.classList.add('active');
+      });
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+    }
 
     function handleKey(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
       }
+    }
+
+    function makeAvatar(isUser) {
+      const div = document.createElement('div');
+      div.className = 'message-avatar';
+      if (isUser) {
+        div.innerHTML = `<svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <circle cx="18" cy="18" r="18" fill="rgba(201,168,76,0.18)" stroke="rgba(201,168,76,0.4)" stroke-width="1"/>
+          <circle cx="18" cy="14" r="5" fill="rgba(201,168,76,0.6)"/>
+          <path d="M9 27c0-5 4-8 9-8s9 3 9 8" fill="rgba(201,168,76,0.4)"/>
+        </svg>`;
+      } else {
+        div.innerHTML = `<svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <circle cx="18" cy="18" r="18" fill="rgba(26,45,66,0.9)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <line x1="18" y1="10" x2="18" y2="22" stroke="#c9a84c" stroke-width="1.6" stroke-linecap="round"/>
+          <line x1="13" y1="24" x2="23" y2="24" stroke="#c9a84c" stroke-width="1.6" stroke-linecap="round"/>
+          <line x1="18" y1="12" x2="13" y2="15" stroke="#c9a84c" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="18" y1="12" x2="23" y2="15" stroke="#c9a84c" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M10 15 Q13 19 16 15" stroke="#c9a84c" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <path d="M20 15 Q23 19 26 15" stroke="#c9a84c" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+        </svg>`;
+      }
+      return div;
     }
 
     function renderMessage(role, content, streaming = false) {
@@ -193,9 +379,7 @@
       div.className = `message ${isUser ? 'message-user' : 'message-ai'}`;
       div.id = streaming ? 'streaming-msg' : '';
 
-      const avatar = document.createElement('div');
-      avatar.className = 'message-avatar';
-      avatar.textContent = isUser ? '👤' : '⚖️';
+      const avatar = makeAvatar(isUser);
 
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
@@ -222,15 +406,16 @@
       const div = document.createElement('div');
       div.className = 'message message-ai';
       div.id = 'typing-indicator';
-      div.innerHTML = `
-        <div class="message-avatar">⚖️</div>
-        <div class="message-bubble">
-          <div class="typing-indicator">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-        </div>`;
+      const avatar = makeAvatar(false);
+      div.appendChild(avatar);
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.innerHTML = `<div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>`;
+      div.appendChild(bubble);
       chatArea.appendChild(div);
       chatArea.scrollTop = chatArea.scrollHeight;
     }
@@ -242,6 +427,7 @@
 
     async function sendMessage() {
       if (isStreaming) return;
+      const input = document.getElementById('chatInput');
       const content = input.value.trim();
       if (!content) return;
 
@@ -252,18 +438,16 @@
 
       messages.push({ role: 'user', content });
       renderMessage('user', content);
-
       showTyping();
 
       try {
         const resp = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages, topic: state.topic, condition: state.condition })
+          body: JSON.stringify({ messages, topic: state.topic, condition: currentCondition })
         });
 
         removeTyping();
-
         if (!resp.ok) throw new Error('API error ' + resp.status);
 
         const bubble = renderMessage('assistant', '', true);
@@ -275,8 +459,7 @@
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const text = decoder.decode(value);
-          const lines = text.split('\n');
+          const lines = decoder.decode(value).split('\n');
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
@@ -298,27 +481,113 @@
         exchanges++;
         document.getElementById('exchangeCount').textContent = exchanges;
 
-        if (exchanges >= 3) {
-          document.getElementById('endBtn').classList.remove('btn-end-disabled');
+        if (exchanges >= REQUIRED_EXCHANGES) {
+          document.getElementById('endBtn').classList.remove('end-btn-disabled');
         }
 
       } catch (err) {
         removeTyping();
-        renderMessage('assistant', '⚠️ Error: ' + err.message);
+        renderMessage('assistant', 'Error: ' + err.message);
       } finally {
         isStreaming = false;
         document.getElementById('sendBtn').disabled = false;
-        input.focus();
+        document.getElementById('chatInput').focus();
       }
     }
 
-    function endDebate() {
-      if (exchanges < 3) return;
+    async function endCurrentCondition() {
+      if (exchanges < REQUIRED_EXCHANGES) return;
+
+      // Save this condition's session data
       state.messages = messages;
       state.endedAt = new Date().toISOString();
       localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
-      window.location.href = '/reflect.html?s=' + sessionId;
+
+      // Save session to server for this condition
+      const [judgeResp, metricsResp] = await Promise.allSettled([
+        fetch('/api/judge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages, topic: state.topic, condition: currentCondition })
+        }).then(r => r.json()),
+        fetch('/api/metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages })
+        }).then(r => r.json())
+      ]);
+
+      const judgeScores = judgeResp.status === 'fulfilled' ? judgeResp.value : null;
+      const argQualityMetrics = metricsResp.status === 'fulfilled' ? metricsResp.value : null;
+
+      // We'll save the full session including judge/metrics later with the survey
+      // For now update participant state
+      const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+      if (!ps.conditionsDone) ps.conditionsDone = [];
+      if (!ps.conditionsDone.includes(currentCondition)) {
+        ps.conditionsDone.push(currentCondition);
+      }
+      // Store messages per condition for final survey
+      if (!ps.conditionData) ps.conditionData = {};
+      ps.conditionData[currentCondition] = {
+        sessionId,
+        messages,
+        judgeScores,
+        argQualityMetrics,
+        startedAt: state.startedAt,
+        endedAt: state.endedAt
+      };
+      localStorage.setItem('dc_participant_state', JSON.stringify(ps));
+
+      // Determine next condition
+      const doneIdx = CONDITION_ORDER.indexOf(currentCondition);
+      const nextCondition = CONDITION_ORDER[doneIdx + 1];
+
+      if (!nextCondition) {
+        // All 3 conditions done - go to survey
+        window.location.href = '/reflect.html?final=1';
+        return;
+      }
+
+      // Show transition overlay
+      const condNames2 = {
+        A: 'Condition A - Vanilla',
+        B: 'Condition B - Prompted',
+        C: 'Condition C - Fine-tuned'
+      };
+      document.getElementById('transTitle').textContent = condNames2[currentCondition] + ' Complete';
+      document.getElementById('transSub').textContent =
+        `You completed ${exchanges} exchanges. Take a breath before the next condition.`;
+      document.getElementById('nextCondBadge').textContent =
+        'Up next: ' + condNames2[nextCondition];
+      document.getElementById('transitionOverlay').classList.add('visible');
     }
+
+    function continueToNext() {
+      const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+      const done = ps.conditionsDone || [];
+      const doneIdx = CONDITION_ORDER.indexOf(currentCondition);
+      const nextCondition = CONDITION_ORDER[doneIdx + 1];
+      if (!nextCondition) {
+        window.location.href = '/reflect.html?final=1';
+        return;
+      }
+
+      // Launch next condition debate
+      const newSessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      const newState = {
+        sessionId: newSessionId,
+        participantId: state.participantId,
+        topic: state.topic,
+        condition: nextCondition,
+        startedAt: new Date().toISOString()
+      };
+      localStorage.setItem('debate_session_' + newSessionId, JSON.stringify(newState));
+      window.location.href = '/debate.html?s=' + newSessionId;
+    }
+
+    // Focus input on load
+    document.getElementById('chatInput').focus();
   </script>
 </body>
 </html>
