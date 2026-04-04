@@ -93,7 +93,7 @@ app.post('/api/chat', async (req, res) => {
   const systemPrompt = SYSTEM_PROMPTS[condition] || SYSTEM_PROMPTS.B;
   const model = condition === 'C' && process.env.FINE_TUNED_MODEL_ID
     ? process.env.FINE_TUNED_MODEL_ID
-    : 'claude-sonnet-4-5-20250514';
+    : (condition === 'C' ? 'gpt-4o' : 'gpt-4o-mini');
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -132,7 +132,7 @@ app.post('/api/reflect', async (req, res) => {
 
   try {
     const resp = await openai.chat.completions.create({
-      model: 'claude-sonnet-4-5-20250514',
+      model: 'gpt-4o-mini',
       messages: [{
         role: 'system',
         content: `You are a debate analyst. Given this debate transcript on the topic "${topic}", extract exactly 3 of the strongest counterarguments that the AI raised. Return JSON: { "counterarguments": ["arg1", "arg2", "arg3"] }. Each should be 1-2 sentences, precise, and directly challenging the participant's position.`
@@ -159,7 +159,7 @@ app.post('/api/judge', async (req, res) => {
 
   try {
     const resp = await openai.chat.completions.create({
-      model: 'claude-sonnet-4-5-20250514',
+      model: 'gpt-4o-mini',
       messages: [{
         role: 'system',
         content: `You are an expert debate evaluator. Rate this AI debate transcript on each property from 1 (very poor) to 5 (excellent). Return JSON with this exact shape:
@@ -342,6 +342,70 @@ app.get('/api/export', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="debate_coach_export_${new Date().toISOString().split('T')[0]}.csv"`);
   // BOM for Excel compatibility
   res.send('\uFEFF' + csv);
+});
+
+// GET /api/export-txt - human-readable transcript export
+app.get('/api/export-txt', (req, res) => {
+  const sessions = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
+  const condNames = { A: 'Vanilla', B: 'Prompted Devil\'s Advocate', C: 'Fine-tuned' };
+
+  function fmtDate(iso) {
+    if (!iso) return 'N/A';
+    try { return new Date(iso).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }); } catch { return iso; }
+  }
+
+  const lines = [];
+  lines.push('DEBATE COACH - SESSION TRANSCRIPTS');
+  lines.push(`Exported: ${fmtDate(new Date().toISOString())}`);
+  lines.push('='.repeat(80));
+
+  for (const s of sessions) {
+    lines.push('');
+    lines.push(`Session ID : ${s.sessionId}`);
+    lines.push(`Participant: ${s.participantId || 'N/A'}`);
+    lines.push(`Condition  : ${s.condition} - ${condNames[s.condition] || s.condition}`);
+    lines.push(`Topic      : ${s.topic}`);
+    lines.push(`Started    : ${fmtDate(s.startedAt)}`);
+    lines.push(`Ended      : ${fmtDate(s.endedAt)}`);
+    lines.push('-'.repeat(80));
+
+    if (s.messages && s.messages.length > 0) {
+      lines.push('TRANSCRIPT:');
+      for (const m of s.messages) {
+        const speaker = m.role === 'user' ? 'PARTICIPANT   ' : 'DEBATE COACH  ';
+        const wrapped = m.content.replace(/(.{70})/g, '$1\n               ');
+        lines.push(`  ${speaker}: ${wrapped}`);
+      }
+    }
+
+    if (s.survey) {
+      lines.push('');
+      lines.push('SURVEY RESPONSES:');
+      lines.push(`  Stance Reconsideration : ${s.survey.stanceReconsideration ?? 'N/A'} / 5`);
+      lines.push(`  Perceived Fairness     : ${s.survey.perceivedFairness ?? 'N/A'} / 5`);
+      lines.push(`  Helpfulness            : ${s.survey.helpfulness ?? 'N/A'} / 5`);
+      lines.push(`  Frustration            : ${s.survey.frustration ?? 'N/A'} / 5`);
+      if (s.survey.openResponse) lines.push(`  Open Response          : ${s.survey.openResponse}`);
+    }
+
+    if (s.judgeScores) {
+      lines.push('');
+      lines.push('AI JUDGE SCORES:');
+      lines.push(`  Counterargument Strength : ${s.judgeScores.counterargumentStrength ?? 'N/A'} / 5`);
+      lines.push(`  Engagement w/ Arguments  : ${s.judgeScores.engagementWithArguments ?? 'N/A'} / 5`);
+      lines.push(`  Fairness                 : ${s.judgeScores.fairness ?? 'N/A'} / 5`);
+      lines.push(`  Persuasive Appeal        : ${s.judgeScores.persuasiveAppeal ?? 'N/A'} / 5`);
+      lines.push(`  Constructive Appeal      : ${s.judgeScores.constructiveAppeal ?? 'N/A'} / 5`);
+      if (s.judgeScores.justification) lines.push(`  Justification            : ${s.judgeScores.justification}`);
+    }
+
+    lines.push('='.repeat(80));
+  }
+
+  const txt = lines.join('\n');
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="debate_coach_transcripts_${new Date().toISOString().split('T')[0]}.txt"`);
+  res.send(txt);
 });
 
 app.listen(PORT, () => console.log(`Debate Coach running at http://localhost:${PORT}`));

@@ -29,7 +29,8 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; overflow-x: hidden; }
+html { scroll-behavior: smooth; overflow-x: hidden; scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -38,6 +39,7 @@ body {
   min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
+  scrollbar-width: none;
   background-image:
     radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 80%, rgba(36,59,85,0.8) 0%, transparent 60%);
