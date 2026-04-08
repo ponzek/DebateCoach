@@ -57,28 +57,6 @@
       margin-top: 1.5rem;
     }
 
-    /* Condition tabs for survey */
-    .cond-tab-row {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.25rem;
-    }
-    .cond-tab {
-      flex: 1;
-      padding: 0.6rem;
-      border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border-subtle);
-      background: rgba(13,27,42,0.4);
-      text-align: center;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: default;
-    }
-    .cond-tab.active-a { border-color: var(--green); color: var(--green); background: rgba(76,175,130,0.08); }
-    .cond-tab.active-b { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
-    .cond-tab.active-c { border-color: #a78bfa; color: #a78bfa; background: rgba(130,100,220,0.08); }
-
     .per-cond-label {
       font-size: 0.8rem;
       color: var(--text-secondary);
@@ -118,43 +96,22 @@
 
   <div class="reflect-layout">
     <div class="step-header">
-      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:50%"></div></div>
       <div class="flex-between">
         <div>
-          <div class="section-title" id="stepTitle">Reviewing Counterarguments</div>
-          <div class="section-sub" id="stepSub">Step 1 of 3</div>
+          <div class="section-title" id="stepTitle">Rate Each Condition</div>
+          <div class="section-sub" id="stepSub">Step 1 of 2</div>
         </div>
       </div>
     </div>
 
-    <!-- Step 1: Counterargument review for Condition C (most recent/final) -->
+    <!-- Step 1: Per-condition Likert survey -->
     <div class="step-section active" id="step1">
       <div class="card mb-2">
         <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">
-          Based on your final debate (Condition C), here are the <strong style="color:var(--gold)">3 strongest counterarguments</strong> the AI raised against your position:
+          Rate your experience with <strong style="color:var(--gold)">each AI condition</strong> separately on a 1-5 scale (1 = Strongly Disagree, 5 = Strongly Agree). 
         </p>
-        <div id="counterargsList">
-          <div class="loading-overlay">
-            <div class="loading-spinner"></div>
-            <p>Analyzing your debate transcript...</p>
-          </div>
-        </div>
-      </div>
-      <div class="nav-row">
-        <span></span>
-        <button class="btn btn-primary" id="toStep2Btn" onclick="goToStep(2)" disabled>Continue to Survey
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Step 2: Per-condition Likert survey -->
-    <div class="step-section" id="step2">
-      <div class="card mb-2">
-        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">
-          Rate your experience with <strong style="color:var(--gold)">each AI condition</strong> separately on a 1-5 scale (1 = Strongly Disagree, 5 = Strongly Agree).
-        </p>
-
+        
         <!-- Condition A -->
         <div class="per-cond-label">Condition A - Vanilla GPT-4o</div>
         <div class="survey-question">
@@ -249,18 +206,15 @@
         </div>
       </div>
       <div class="nav-row">
-        <button class="btn btn-ghost" onclick="goToStep(1)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          Back
-        </button>
-        <button class="btn btn-primary" id="toStep3Btn" onclick="goToStep(3)" disabled>Continue
+        <span></span>
+        <button class="btn btn-primary" id="toStep2Btn" onclick="goToStep(2)" disabled>Continue
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- Step 3: Open response -->
-    <div class="step-section" id="step3">
+    <!-- Step 2: Open response -->
+    <div class="step-section" id="step2">
       <div class="card mb-2">
         <div class="form-group">
           <label class="form-label">Open Reflection <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(optional)</span></label>
@@ -269,7 +223,7 @@
         </div>
       </div>
       <div class="nav-row">
-        <button class="btn btn-ghost" onclick="goToStep(2)">
+        <button class="btn btn-ghost" onclick="goToStep(1)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Back
         </button>
@@ -303,13 +257,10 @@
       C: { stanceReconsideration: 0, perceivedFairness: 0, helpfulness: 0, frustration: 0 }
     };
 
-    let counterarguments = [];
     let currentStep = 1;
-
     const steps = [
-      { id: 1, title: 'Reviewing Counterarguments', sub: 'Step 1 of 3', progress: 33 },
-      { id: 2, title: 'Rate Each Condition', sub: 'Step 2 of 3', progress: 66 },
-      { id: 3, title: 'Open Reflection', sub: 'Step 3 of 3', progress: 90 },
+      { id: 1, title: 'Rate Each Condition', sub: 'Step 1 of 2', progress: 50 },
+      { id: 2, title: 'Open Reflection', sub: 'Step 2 of 2', progress: 90 },
     ];
 
     function goToStep(n) {
@@ -356,47 +307,7 @@
         survey[cond].helpfulness &&
         survey[cond].frustration
       );
-      document.getElementById('toStep3Btn').disabled = !allFilled;
-    }
-
-    async function loadCounterarguments() {
-      // Use condition C messages (the final/most sophisticated condition)
-      const cData = conditionData['C'] || conditionData['B'] || conditionData['A'];
-      if (!cData || !cData.messages || cData.messages.length === 0) {
-        document.getElementById('counterargsList').innerHTML =
-          '<p style="color:var(--text-muted);font-size:0.85rem;">No transcript available for counterargument analysis.</p>';
-        document.getElementById('toStep2Btn').disabled = false;
-        return;
-      }
-
-      try {
-        const resp = await fetch('/api/reflect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: cData.messages, topic })
-        });
-        const data = await resp.json();
-        counterarguments = data.counterarguments || [];
-        renderCounterargs();
-      } catch (err) {
-        document.getElementById('counterargsList').innerHTML =
-          `<p style="color:var(--red);font-size:0.85rem;">Could not load counterarguments: ${err.message}</p>`;
-        document.getElementById('toStep2Btn').disabled = false;
-      }
-    }
-
-    function renderCounterargs() {
-      const container = document.getElementById('counterargsList');
-      container.innerHTML = '';
-      counterarguments.forEach((arg, i) => {
-        const div = document.createElement('div');
-        div.className = 'counter-card mt-1';
-        div.innerHTML = `
-          <div class="counter-number">${i + 1}</div>
-          <div style="font-size:0.9rem;color:var(--text-primary);line-height:1.55;">${arg}</div>`;
-        container.appendChild(div);
-      });
-      document.getElementById('toStep2Btn').disabled = false;
+      document.getElementById('toStep2Btn').disabled = !allFilled;
     }
 
     async function submitSurvey() {
@@ -406,6 +317,21 @@
 
       const openResponse = document.getElementById('openResponse').value.trim();
       let lastSessionId = null;
+      let auditResults = null;
+
+      // Trigger high-quality pairwise audit
+      try {
+        const auditResp = await fetch('/api/audit-pairwise', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conditionData, topic })
+        });
+        if (auditResp.ok) {
+          auditResults = await auditResp.json();
+        }
+      } catch (err) {
+        console.error('Pairwise audit failed:', err);
+      }
 
       // Save one session record per condition
       for (const cond of ['A', 'B', 'C']) {
@@ -417,10 +343,11 @@
           topic,
           condition: cond,
           messages: cData.messages || [],
-          counterarguments: cond === 'C' ? counterarguments : [],
+          counterarguments: [], 
           survey: { ...survey[cond], openResponse },
           judgeScores: cData.judgeScores || null,
           argQualityMetrics: cData.argQualityMetrics || null,
+          auditResults: auditResults || null,
           startedAt: cData.startedAt,
           endedAt: cData.endedAt || new Date().toISOString()
         };
@@ -445,7 +372,12 @@
       window.location.href = '/complete.html' + (lastSessionId ? '?s=' + lastSessionId : '');
     }
 
-    loadCounterarguments();
+    // Handle deep-linking to steps via URL (Dev Tools)
+    const stepParam = new URLSearchParams(window.location.search).get('step');
+    if (stepParam) {
+      setTimeout(() => goToStep(parseInt(stepParam)), 100);
+    }
   </script>
+  <script src="/dev-tools.js"></script>
 </body>
 </html>

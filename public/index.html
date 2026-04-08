@@ -7,18 +7,18 @@
   <meta name="description" content="Sharpen your thinking with an AI devil's advocate. Debate Coach challenges your beliefs constructively."/>
   <link rel="stylesheet" href="/style.css"/>
   <style>
-    body { overflow-x: hidden; }
+    body { overflow-x: hidden; overflow-y: hidden; }
 
     .hero {
       text-align: center;
-      padding: 5rem 1.5rem 3rem;
+      padding: 2rem 1.5rem 1rem;
     }
     .hero-title {
       font-family: 'Playfair Display', serif;
       font-size: clamp(2.2rem, 6vw, 3.8rem);
       font-weight: 700;
       line-height: 1.15;
-      margin-bottom: 1.25rem;
+      margin-bottom: 0.75rem;
       color: var(--text-primary);
     }
     .hero-title em { color: var(--gold); font-style: italic; }
@@ -26,25 +26,28 @@
       font-size: 1.05rem;
       color: var(--text-secondary);
       max-width: 520px;
-      margin: 0 auto 3rem;
+      margin: 0 auto 1.5rem;
       line-height: 1.75;
     }
 
     .setup-wrap {
-      max-width: 860px;
+      max-width: 1600px;
       margin: 0 auto;
-      padding: 0 1.5rem 5rem;
+      padding: 0 1.5rem 1rem;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: stretch;
       gap: 1.25rem;
     }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
-    }
-    @media (max-width: 640px) {
-      .info-grid { grid-template-columns: 1fr; }
+    .setup-wrap > .card { flex: 0.9; height: 480px; }
+    .setup-wrap > .card-gold { flex: 2.1; height: 480px; }
+    @media (max-width: 1024px) {
+      .setup-wrap {
+        flex-direction: column;
+        max-width: 860px;
+      }
+      .setup-wrap > .card,
+      .setup-wrap > .card-gold { flex: unset; padding: 2rem; height: auto; }
     }
 
     /* Participant ID display */
@@ -99,7 +102,42 @@
     .topic-field-required {
       font-size: 0.72rem;
       color: var(--text-muted);
-      margin-bottom: 0.6rem;
+      margin-top: 0.5rem;
+    }
+
+    .limit-warning {
+      position: absolute;
+      bottom: -18px;
+      left: 0;
+      font-size: 0.68rem;
+      color: var(--red);
+      font-weight: 600;
+      display: none;
+    }
+
+    /* Locked space for topic input to prevent card jitter */
+    .topic-reserve-space {
+      height: 105px; /* Locked height for 3 lines + counter */
+      display: flex;
+      flex-direction: column;
+    }
+    .topic-input-container {
+      position: relative;
+      margin-bottom: 4px;
+    }
+    .topic-field {
+      max-height: 85px; /* Exactly 3 lines */
+      min-height: 48px; /* Start at 1-2 lines */
+      overflow: hidden !important; /* No scrollbars */
+      transition: border-color 0.2s, box-shadow 0.2s, height 0.15s ease;
+      padding-bottom: 12px;
+    }
+    .char-counter {
+      align-self: flex-end;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      margin-right: 2px;
     }
     .topic-chips-label {
       font-size: 0.72rem;
@@ -118,7 +156,7 @@
       background: rgba(201,168,76,0.06);
       border: 1.5px solid rgba(201,168,76,0.3);
       border-radius: 99px;
-      padding: 0.45rem 0.9rem;
+      padding: 0.3rem 0.8rem;
       font-size: 0.78rem;
       font-weight: 500;
       color: var(--text-secondary);
@@ -130,8 +168,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.3rem;
       text-align: center;
+      position: relative;
     }
     .topic-chip:hover {
       background: rgba(201,168,76,0.14);
@@ -152,6 +190,8 @@
     }
     /* always reserve checkmark space — visibility swap, not display swap */
     .chip-check {
+      position: absolute;
+      left: 10px;
       width: 12px;
       height: 12px;
       flex-shrink: 0;
@@ -160,12 +200,15 @@
     .topic-chip.selected .chip-check { visibility: visible; }
 
     /* Conditions legend */
+    .card-flex { display: flex; flex-direction: column; }
     .conditions-legend {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      padding: 1.1rem;
-      background: rgba(13,27,42,0.5);
+      gap: 1.1rem;
+      padding: 1.75rem 1.5rem;
+      margin: 0 -1.5rem -1.5rem;
+      flex: 1;
+      background: rgba(13,27,42,0.65);
       border-radius: var(--radius-sm);
       border: 1px solid var(--border-subtle);
     }
@@ -174,8 +217,8 @@
     .cond-a .cond-dot { background: var(--green); }
     .cond-b .cond-dot { background: var(--gold); }
     .cond-c .cond-dot { background: #a78bfa; }
-    .cond-label { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
-    .cond-desc { font-size: 0.77rem; color: var(--text-secondary); line-height: 1.4; margin-top: 0.1rem; }
+    .cond-label { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+    .cond-desc { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.5; margin-top: 0.15rem; }
 
     /* Study info */
     .study-info { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.65; }
@@ -235,7 +278,38 @@
     </section>
 
     <div class="setup-wrap">
-      <!-- Top: Setup form (full width) -->
+      <!-- Left: Study Conditions -->
+      <div class="card card-flex">
+          <div class="section-card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            Study Conditions
+          </div>
+          <div class="conditions-legend">
+            <div class="cond-row cond-a">
+              <div class="cond-dot"></div>
+              <div>
+                <div class="cond-label">A - Vanilla GPT-4o</div>
+                <div class="cond-desc">No special instructions. Baseline behavior for comparison.</div>
+              </div>
+            </div>
+            <div class="cond-row cond-b">
+              <div class="cond-dot"></div>
+              <div>
+                <div class="cond-label">B - Prompted Devil's Advocate</div>
+                <div class="cond-desc">Engineered system prompt guiding the AI to challenge constructively without straw-manning.</div>
+              </div>
+            </div>
+            <div class="cond-row cond-c">
+              <div class="cond-dot"></div>
+              <div>
+                <div class="cond-label">C - Adapted Model</div>
+                <div class="cond-desc">Fine-tuned on high-quality debate transcripts for deeper, more principled challenges.</div>
+              </div>
+            </div>
+          </div>
+      </div>
+
+      <!-- Center: Setup form -->
       <div class="card card-gold">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;flex-wrap:wrap;">
           <!-- Left column: title + ID + topic -->
@@ -260,14 +334,20 @@
                 Debate Topic
                 <span style="color:var(--red);margin-left:2px;">*</span>
               </label>
-              <textarea
-                class="topic-field"
-                id="topicInput"
-                placeholder="Type your debate topic here..."
-                autocomplete="off"
-                rows="2"
-                style="resize:none;overflow:hidden;line-height:1.5;"
-              ></textarea>
+              <div class="topic-reserve-space">
+                <div class="topic-input-container">
+                  <textarea
+                    class="topic-field"
+                    id="topicInput"
+                    placeholder="Type your debate topic here..."
+                    autocomplete="off"
+                    rows="1"
+                    style="resize:none;line-height:1.5;"
+                  ></textarea>
+                  <div class="limit-warning" id="limitWarning">Limit reached (110 chars)</div>
+                </div>
+                <div class="char-counter" id="charCount">0/110</div>
+              </div>
               <div class="topic-field-required">Required - type anything you want to debate</div>
             </div>
           </div>
@@ -297,39 +377,8 @@
         </div>
       </div>
 
-      <!-- Bottom: Info cards side by side -->
-      <div class="info-grid">
-        <div class="card">
-          <div class="section-card-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            Study Conditions
-          </div>
-          <div class="conditions-legend">
-            <div class="cond-row cond-a">
-              <div class="cond-dot"></div>
-              <div>
-                <div class="cond-label">A - Vanilla GPT-4o</div>
-                <div class="cond-desc">No special instructions. Baseline behavior for comparison.</div>
-              </div>
-            </div>
-            <div class="cond-row cond-b">
-              <div class="cond-dot"></div>
-              <div>
-                <div class="cond-label">B - Prompted Devil's Advocate</div>
-                <div class="cond-desc">Engineered system prompt guiding the AI to challenge constructively without straw-manning.</div>
-              </div>
-            </div>
-            <div class="cond-row cond-c">
-              <div class="cond-dot"></div>
-              <div>
-                <div class="cond-label">C - Adapted Model</div>
-                <div class="cond-desc">Fine-tuned on high-quality debate transcripts for deeper, more principled challenges.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
+      <!-- Right: About this Study -->
+      <div class="card">
           <div class="section-card-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             About this Study
@@ -340,7 +389,6 @@
             <strong>Time:</strong> Approximately 15-20 minutes total.<br/><br/>
             <strong>Data collected:</strong> Conversation transcripts and your survey responses (1-5 scale ratings). No personal information is stored beyond your auto-assigned participant ID.
           </p>
-        </div>
       </div>
     </div>
   </main>
@@ -374,9 +422,25 @@
     let selectedChips = [];
     let chipUpdating = false; // guard: prevent input listener firing during chip updates
 
+    const MAX_TOPIC_CHARS = 110;
+
     function autoResizeTopic(el) {
       el.style.height = 'auto';
-      el.style.height = el.scrollHeight + 'px';
+      // Limit to 3 lines (~85px)
+      const newHeight = Math.min(el.scrollHeight, 85);
+      el.style.height = newHeight + 'px';
+    }
+
+    function updateCharCount(el) {
+      if (el.value.length >= MAX_TOPIC_CHARS) {
+        el.value = el.value.substring(0, MAX_TOPIC_CHARS);
+        document.getElementById('limitWarning').style.display = 'block';
+        el.style.borderColor = 'var(--red)';
+      } else {
+        document.getElementById('limitWarning').style.display = 'none';
+        el.style.borderColor = '';
+      }
+      document.getElementById('charCount').textContent = el.value.length + '/' + MAX_TOPIC_CHARS;
     }
 
     function buildTopicString(topics) {
@@ -401,7 +465,11 @@
       const input = document.getElementById('topicInput');
       chipUpdating = true;
       input.value = buildTopicString(selectedChips);
+      if (input.value.length > MAX_TOPIC_CHARS) {
+         input.value = input.value.substring(0, MAX_TOPIC_CHARS);
+      }
       chipUpdating = false;
+      updateCharCount(input);
       autoResizeTopic(input);
     }
 
@@ -410,6 +478,7 @@
       if (chipUpdating) return;
       selectedChips = [];
       document.querySelectorAll('#topicChips .topic-chip').forEach(c => c.classList.remove('selected'));
+      updateCharCount(this);
       autoResizeTopic(this);
     });
 
@@ -461,5 +530,6 @@
 
     assignParticipantId();
   </script>
+  <script src="/dev-tools.js"></script>
 </body>
 </html>

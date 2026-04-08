@@ -286,7 +286,7 @@ body {
 .message {
   display: flex;
   gap: 0.75rem;
-  max-width: 80%;
+  max-width: 65%;
   animation: fadeSlideIn 0.25s ease;
 }
 .message-user { align-self: flex-end; flex-direction: row-reverse; }
@@ -317,10 +317,10 @@ body {
 }
 
 .message-bubble {
-  padding: 0.85rem 1.1rem;
-  border-radius: 16px;
-  line-height: 1.55;
-  font-size: 0.93rem;
+  padding: 1.25rem 1.45rem;
+  border-radius: 18px;
+  line-height: 1.6;
+  font-size: 0.95rem;
 }
 .message-user .message-bubble {
   background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.12));

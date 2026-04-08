@@ -6,6 +6,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
+import { runFullAudit } from './judgeService.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -34,32 +35,28 @@ app.use(express.static(join(__dirname, 'public')));
 const SYSTEM_PROMPTS = {
   A: `You are a conversational AI assistant. Engage with the user's debate topic naturally.`,
 
-  B: `You are "Debate Coach," a rigorous devil's advocate. Your role is NOT to win the argument - it is to strengthen the user's critical thinking by presenting the strongest possible counterarguments to whatever position they defend.
+  B: `You are "Debate Coach," a rigorous devil's advocate who strengthens the user's critical thinking by presenting the strongest possible counterarguments.
 
-Rules:
-1. Always argue the opposite of the user's stated position, even if you personally agree with them.
-2. Never straw-man. Engage directly with the user's actual stated claims.
-3. Use Socratic questions to expose unstated assumptions.
-4. Present ONE clear, well-reasoned counterargument per turn - do not pepper the user with multiple points.
-5. Acknowledge strong points the user makes before pivoting to your counterpoint.
-6. Remain calm, respectful, and intellectually fair at all times.
-7. Do not moralize or lecture. Stay argument-focused.
-8. Keep responses concise (2-4 sentences max) so the debate stays dynamic.
+Your Guidelines:
+1. Counter-point with Facts: Support every counterargument with one specific real-world fact, historical example, or study finding.
+2. Accessible Rigor: Maintain high intellectual standards but avoid academic or debate jargon. Speak like a brilliant, plain-spoken mentor.
+3. Single Point Focus: Present only ONE well-reasoned counter-point at a time.
+4. Fair Acknowledgment: Briefly acknowledge any strong point the user makes before pivoting to your factual challenge.
+5. Direct Engagement: Argue the opposite of the user's position by directly challenging their stated evidence or assumptions.
+6. Concise Dynamics: Keep responses between 3-5 sentences to keep the debate moving.
 
-Your goal: help the user refine their thinking, not defeat them.`,
+Your goal: help the user refine their thinking through factual challenge, not just logical questioning.`,
 
-  C: `You are "Debate Coach," a highly trained devil's advocate developed on high-quality debate transcripts. Your mission is to constructively challenge the user's beliefs with precision, nuance, and intellectual honesty.
+  C: `You are "Debate Coach," an expert analyst and devil's advocate. Your mission is to foster genuine reconsideration of the user's view by identifying and challenging the core logic of their argument.
 
-Approach:
-- Identify the core inferential structure of the user's argument before countering it.
-- Counter at the level of principle, evidence, or logical implication - not surface rhetoric.
-- Practice steelmanning: acknowledge the strongest version of their view, then target its weakest point.
-- Use one crisp counterargument per turn; follow up with a probing question.
-- Mirror the user's vocabulary and frame to keep arguments grounded in their own terms.
-- Calibrate intensity: if the user seems frustrated, soften tone; if engaged, deepen the challenge.
-- Never repeat an argument you've already made in this session.
+Your Advanced Approach:
+1. Empirical Precision: Challenge the user's logical premises by introducing high-quality data, research outcomes, or expert consensus that contradicts their view.
+2. Professional Clarity: Your language must be sophisticated and precise, yet free of academic jargon (avoid terms like 'steelmanning' or 'inferential structure'). Communicate with the clarity of an expert witness.
+3. Root Analysis: Target the hidden assumptions in the user's claim and challenge them with conflicting real-world evidence.
+4. Dynamic Calibration: If the user is logically consistent, find a specific research exception or edge case to challenge the universality of their claim.
+5. Purposeful Engagement: Do not rely solely on questions to lead the user; instead, present a forceful, fact-backed case that necessitates a response.
 
-Goal: foster genuine reconsideration, not defensiveness.`
+Goal: Provide the user with a highly rigorous, evidence-based challenge that forces a deeper level of critical thinking.`
 };
 
 function parseJSON(raw) {
@@ -87,29 +84,38 @@ app.get('/api/next-participant-id', (req, res) => {
 
 // POST /api/chat (streaming)
 app.post('/api/chat', async (req, res) => {
-  const { messages, topic, condition } = req.body;
-  if (!messages || !condition) return res.status(400).json({ error: 'Missing fields' });
-
-  const systemPrompt = SYSTEM_PROMPTS[condition] || SYSTEM_PROMPTS.B;
-  const model = condition === 'C' && process.env.FINE_TUNED_MODEL_ID
-    ? process.env.FINE_TUNED_MODEL_ID
-    : (condition === 'C' ? 'gpt-4o' : 'gpt-4o-mini');
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  try {
-    const stream = await openai.chat.completions.create({
-      model,
-      stream: true,
-      messages: [
-        { role: 'system', content: `${systemPrompt}\n\nDebate topic: "${topic}"` },
-        ...messages
-      ],
-      max_tokens: 300,
-      temperature: 0.8
-    });
+    const { messages, topic, condition, isFinal } = req.body;
+    if (!messages || !condition) return res.status(400).json({ error: 'Missing fields' });
+  
+    const systemPrompt = SYSTEM_PROMPTS[condition] || SYSTEM_PROMPTS.B;
+    const model = condition === 'C' && process.env.FINE_TUNED_MODEL_ID
+      ? process.env.FINE_TUNED_MODEL_ID
+      : (condition === 'C' ? 'gpt-4o' : 'gpt-4o-mini');
+  
+    const apiMessages = [
+      { role: 'system', content: `${systemPrompt}\n\nDebate topic: "${topic}"` },
+      ...messages
+    ];
+  
+    if (isFinal) {
+      apiMessages.push({ 
+        role: 'system', 
+        content: "This is your final response for this topic. Do NOT end with a question. Instead, acknowledge their last point and provide a definitive closing wrap-up that leaves them with a final thought." 
+      });
+    }
+  
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+  
+    try {
+      const stream = await openai.chat.completions.create({
+        model,
+        stream: true,
+        messages: apiMessages,
+        max_tokens: 300,
+        temperature: 0.8
+      });
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta?.content || '';
@@ -154,7 +160,7 @@ app.post('/api/reflect', async (req, res) => {
 app.post('/api/judge', async (req, res) => {
   const { messages, topic, condition } = req.body;
   const transcript = messages
-    .map(m => `${m.role === 'user' ? 'PARTICIPANT' : 'AI'}: ${m.content}`)
+    .map(m => `${m.role === 'user' ? 'PARTICIPANT' : 'AI COACH'}: ${m.content}`)
     .join('\n');
 
   try {
@@ -162,28 +168,30 @@ app.post('/api/judge', async (req, res) => {
       model: 'gpt-4o-mini',
       messages: [{
         role: 'system',
-        content: `You are an expert debate evaluator. Rate this AI debate transcript on each property from 1 (very poor) to 5 (excellent). Return JSON with this exact shape:
-{
-  "counterargumentStrength": <1-5>,
-  "engagementWithArguments": <1-5>,
-  "fairness": <1-5>,
-  "persuasiveAppeal": <1-5>,
-  "constructiveAppeal": <1-5>,
-  "justification": "<2-3 sentence overall justification>"
-}
+        content: `You are a professional HCI (Human-Computer Interaction) researcher and debate auditor. 
+Your task is to evaluate an AI-led debate session. For each dimension, provide a score from 1-5 and a brief justification (1-2 sentences) citing evidence from the transcript.
 
-Definitions:
-- counterargumentStrength: How strong and well-reasoned were the AI's counterarguments?
-- engagementWithArguments: Did the AI engage with the participant's actual claims (not straw-men)?
-- fairness: Was the AI fair, balanced, and free from fallacies?
-- persuasiveAppeal: How persuasive was the AI's overall argumentation?
-- constructiveAppeal: Did the AI's challenges help, rather than alienate, the participant?`
+Dimensions to Evaluate:
+1. logicalRigor: Strength of evidence/facts. Does the AI provide empirical data or expert consensus that necessitates a response?
+2. persuasiveAppeal: Force and conviction. How convincing and forceful was the AI's overall argumentation in challenging the participant?
+3. userFrustration: Friction/Alienation. Did the participant appear dismissive, hostile, or alienated by the AI's tone? (1 = Perfectly Calm; 5 = Highly Frustrated).
+4. engagementQuality: Addressing Premises. How well did the AI address the *exact* logical premises provided by the participant?
+5. personaAdherence: Mentor Integrity. Did the AI maintain its "Debate Coach" mentor persona consistently without sounding like a generic assistant?
+
+Return ONLY a JSON object with this exact shape:
+{
+  "logicalRigor": { "score": <1-5>, "reason": "<reason>" },
+  "persuasiveAppeal": { "score": <1-5>, "reason": "<reason>" },
+  "userFrustration": { "score": <1-5>, "reason": "<reason>" },
+  "engagementQuality": { "score": <1-5>, "reason": "<reason>" },
+  "personaAdherence": { "score": <1-5>, "reason": "<reason>" }
+}`
       }, {
         role: 'user',
-        content: `Topic: ${topic}\nCondition: ${condition}\n\n${transcript}`
+        content: `Debate Topic: ${topic}\nCondition: ${condition}\n\nTranscript:\n${transcript}`
       }],
       response_format: { type: 'json_object' },
-      max_tokens: 400
+      max_tokens: 800
     });
     res.json(parseJSON(resp.choices[0].message.content));
   } catch (err) {
@@ -406,6 +414,19 @@ app.get('/api/export-txt', (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="debate_coach_transcripts_${new Date().toISOString().split('T')[0]}.txt"`);
   res.send(txt);
+});
+
+// POST /api/audit-pairwise
+app.post('/api/audit-pairwise', async (req, res) => {
+  const { conditionData, topic } = req.body;
+  if (!conditionData || !topic) return res.status(400).json({ error: 'Missing data' });
+
+  try {
+    const auditResults = await runFullAudit(conditionData, topic);
+    res.json(auditResults);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => console.log(`Debate Coach running at http://localhost:${PORT}`));

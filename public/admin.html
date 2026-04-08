@@ -334,11 +334,11 @@
         <div class="info-box-body" id="infoBody">
           <p>Each participant completes all 3 conditions (A, B, C) on the same topic. Click any participant row to compare their results across conditions side-by-side.</p>
           <div class="info-grid">
-            <div><span class="info-term">Condition A &mdash; Vanilla:</span> Standard GPT-4o-mini with no special instructions. Used as a baseline.</div>
-            <div><span class="info-term">Condition B &mdash; Prompted:</span> GPT-4o-mini with an engineered devil's advocate system prompt.</div>
-            <div><span class="info-term">Condition C &mdash; Fine-tuned:</span> GPT-4o fine-tuned on high-quality debate transcripts for deeper challenges.</div>
-            <div><span class="info-term">Survey scores (1-5):</span> Self-reported by participants after each condition. Higher is better except Frustration.</div>
-            <div><span class="info-term">LLM-as-Judge scores (1-5):</span> Automated AI evaluator across 5 debate quality dimensions. Higher is better.</div>
+            <div><span class="info-term">Logical Rigor (1-5):</span> Evidence-based challenges (Condition C) vs generic questions.</div>
+            <div><span class="info-term">Stance Impact (1-5):</span> Probability that the AI's logic "planted a seed of doubt" or forced logic refinement.</div>
+            <div><span class="info-term">User Frustration (1-5):</span> Detection of dismissive, hostile, or alienated tone in user responses. (Lower is better).</div>
+            <div><span class="info-term">Persona Adherence (1-5):</span> Consistency of the "Debate Coach" mentor persona.</div>
+            <div><span class="info-term">Engagement Quality (1-5):</span> How well the AI addressed the user's *exact* claims vs scripted responses.</div>
             <div><span class="info-term">Argument Diversity (0-1):</span> How varied the AI's arguments were across turns. Higher = more diverse.</div>
             <div><span class="info-term">Topical Relevance (0-1):</span> How well AI responses addressed participant's claims. Higher = more on-topic.</div>
             <div><span class="info-term">Repetition Rate (0-1):</span> How much the AI repeated itself. Lower is better.</div>
@@ -464,6 +464,32 @@
     let clActiveTab = 'A';
     let currentView = 'dashboard';
 
+    const SURVEY_METRICS = {
+      stanceReconsideration: { label: 'Stance Reconsideration', question: '"The AI prompted me to rethink my original belief."' },
+      perceivedFairness: { label: 'Good Faith Engagement', question: '"The AI argued in good faith and engaged with my actual claims."' },
+      helpfulness: { label: 'Perspective Shift', question: '"The interaction helped me understand the opposing view better."' },
+      frustration: { label: 'Participant Frustration', question: '"The AI was pushy, repetitive, or hostile."', reverse: true }
+    };
+
+    const JUDGE_METRICS = {
+      logicalRigor: { label: 'Logical Rigor', question: 'Does the AI provide empirical evidence or expert consensus that necessitates a response?' },
+      persuasiveAppeal: { label: 'Persuasive Appeal', question: 'How convincing and forceful was the AI\'s overall argumentation in challenging the participant?' },
+      userFrustration: { label: 'User Frustration (Judge)', question: 'Did the participant appear dismissive, hostile, or alienated by the AI\'s tone? (Lower is better)', reverse: true },
+      engagementQuality: { label: 'Engagement Quality', question: 'How well did the AI address the exact logical premises provided by the participant?' },
+      personaAdherence: { label: 'Persona Adherence', question: 'Did the AI maintain its "Debate Coach" mentor persona consistently?' }
+    };
+
+    function getJudgeScore(session, key) {
+      const val = session?.judgeScores?.[key];
+      if (val == null) return null;
+      return typeof val === 'object' ? val.score : val;
+    }
+
+    function getJudgeReason(session, key) {
+      const val = session?.judgeScores?.[key];
+      return typeof val === 'object' ? val.reason : null;
+    }
+
     // ── View switching ──
     function switchView(view) {
       currentView = view;
@@ -517,8 +543,13 @@
 
     function judgeAvgForSession(s) {
       if (!s?.judgeScores) return null;
-      const j = s.judgeScores;
-      return avg([j.counterargumentStrength, j.engagementWithArguments, j.fairness, j.persuasiveAppeal, j.constructiveAppeal]);
+      const scores = Object.keys(JUDGE_METRICS).map(key => {
+        const val = getJudgeScore(s, key);
+        if (val == null) return null;
+        // Reverse frustration for average calculation (1 becomes 5, 5 becomes 1)
+        return JUDGE_METRICS[key].reverse ? (6 - val) : val;
+      }).filter(v => v !== null);
+      return avg(scores);
     }
 
     function calcAvgSurvey(p) {
@@ -565,12 +596,10 @@
     }
 
     function renderCharts() {
-      const surveyDims = [
-        { label: 'Stance Reconsideration', key: 'stanceReconsideration' },
-        { label: 'Perceived Fairness', key: 'perceivedFairness' },
-        { label: 'Helpfulness', key: 'helpfulness' },
-        { label: 'Frustration (lower is better)', key: 'frustration' }
-      ];
+      const surveyDims = Object.keys(SURVEY_METRICS).map(key => ({
+        label: SURVEY_METRICS[key].label + (SURVEY_METRICS[key].reverse ? ' (lower is better)' : ''),
+        key: key
+      }));
       document.getElementById('surveyCharts').innerHTML = allSessions.length
         ? surveyDims.map(d => renderBarGroup(d.label,
             condAvg(allSessions, 'A', s => s.survey?.[d.key]),
@@ -579,18 +608,15 @@
           )).join('')
         : '<div class="empty-state" style="padding:1.5rem;">No survey data yet.</div>';
 
-      const judgeDims = [
-        { label: 'Counterargument Strength', key: 'counterargumentStrength' },
-        { label: 'Engagement', key: 'engagementWithArguments' },
-        { label: 'Fairness', key: 'fairness' },
-        { label: 'Persuasive Appeal', key: 'persuasiveAppeal' },
-        { label: 'Constructive Appeal', key: 'constructiveAppeal' }
-      ];
+      const judgeDims = Object.keys(JUDGE_METRICS).map(key => ({
+        label: JUDGE_METRICS[key].label + (JUDGE_METRICS[key].reverse ? ' (lower is better)' : ''),
+        key: key
+      }));
       document.getElementById('judgeCharts').innerHTML = allSessions.length
         ? judgeDims.map(d => renderBarGroup(d.label,
-            condAvg(allSessions, 'A', s => s.judgeScores?.[d.key]),
-            condAvg(allSessions, 'B', s => s.judgeScores?.[d.key]),
-            condAvg(allSessions, 'C', s => s.judgeScores?.[d.key])
+            avg(allSessions.filter(s => s.condition === 'A').map(s => getJudgeScore(s, d.key))),
+            avg(allSessions.filter(s => s.condition === 'B').map(s => getJudgeScore(s, d.key))),
+            avg(allSessions.filter(s => s.condition === 'C').map(s => getJudgeScore(s, d.key)))
           )).join('')
         : '<div class="empty-state" style="padding:1.5rem;">No judge data yet.</div>';
 
@@ -707,27 +733,52 @@
 
           ${sv ? `
           <div class="cc-section">
-            <div class="cc-section-title">Survey</div>
-            <div class="cc-scores">
-              <div class="cc-score-item"><span class="cc-score-key">Helpfulness</span><span class="cc-score-val">${sv.helpfulness ?? '&mdash;'}/5</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Fairness</span><span class="cc-score-val">${sv.perceivedFairness ?? '&mdash;'}/5</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Stance</span><span class="cc-score-val">${sv.stanceReconsideration ?? '&mdash;'}/5</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Frustration</span><span class="cc-score-val">${sv.frustration ?? '&mdash;'}/5</span></div>
+            <div class="cc-section-title">Participant Survey</div>
+            <div style="display:flex; flex-direction:column; gap:0.6rem;">
+              ${Object.keys(SURVEY_METRICS).map(key => {
+                const score = sv[key];
+                const metric = SURVEY_METRICS[key];
+                if (score == null) return '';
+                return `
+                  <div style="border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom:0.4rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                      <div style="font-size:0.75rem; font-weight:600; color:var(--text-secondary);">${metric.label}</div>
+                      <div style="font-size:0.8rem; font-weight:700; color:var(--text-primary);">${score}/5</div>
+                    </div>
+                    <div style="font-size:0.65rem; color:var(--text-muted); font-style:italic; line-height:1.2;">${metric.question}</div>
+                  </div>
+                `;
+              }).join('')}
             </div>
           </div>` : `<div class="cc-no-data">No survey yet</div>`}
 
           ${j ? `
           <div class="cc-section">
-            <div class="cc-section-title">AI Judge</div>
-            <div class="cc-scores">
-              <div class="cc-score-item"><span class="cc-score-key">Counter Str.</span><span class="cc-score-val">${j.counterargumentStrength ?? '&mdash;'}/5</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Engagement</span><span class="cc-score-val">${j.engagementWithArguments ?? '&mdash;'}/5</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Fairness</span><span class="cc-score-val">${j.fairness ?? '&mdash;'}/5</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Persuasive</span><span class="cc-score-val">${j.persuasiveAppeal ?? '&mdash;'}/5</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Constructive</span><span class="cc-score-val">${j.constructiveAppeal ?? '&mdash;'}/5</span></div>
+            <div class="cc-section-title">AI Judge Evaluation</div>
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+              ${Object.keys(JUDGE_METRICS).map(key => {
+                const score = getJudgeScore(s, key);
+                const reason = getJudgeReason(s, key);
+                const metric = JUDGE_METRICS[key];
+                if (score == null) return '';
+                return `
+                  <div style="border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom:0.6rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.2rem;">
+                      <div style="font-size:0.78rem; font-weight:700; color:var(--text-primary);">${metric.label}</div>
+                      <div style="font-size:0.85rem; font-weight:800; color:var(--gold);">${score}/5</div>
+                    </div>
+                    <div style="font-size:0.68rem; color:var(--text-muted); font-style:italic; margin-bottom:0.35rem; line-height:1.2;">Q: ${metric.question}</div>
+                    ${reason ? `
+                      <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4; padding-left:0.5rem; border-left:2px solid rgba(201,168,76,0.2);">
+                        ${reason}
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
             </div>
-            <div class="cc-avg">
-              <span class="cc-avg-label">Judge Avg</span>
+            <div class="cc-avg" style="margin-top:0.8rem;">
+              <span class="cc-avg-label">Overall Judge Average</span>
               <span class="cc-avg-val">${jAvg != null ? jAvg.toFixed(2) : '&mdash;'}</span>
             </div>
           </div>` : `<div class="cc-no-data" style="margin-top:0.25rem;">No judge scores yet</div>`}
@@ -843,5 +894,6 @@
 
     loadData();
   </script>
+  <script src="/dev-tools.js"></script>
 </body>
 </html>

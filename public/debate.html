@@ -160,7 +160,39 @@
     .welcome-msg p { font-size: 0.88rem; line-height: 1.6; }
 
     /* End / transition buttons */
-    .end-btn-disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+    .end-btn-disabled { display: none; } /* Hidden entirely now */
+
+    /* Input transformation */
+    .chat-input-inner.hidden { display: none; }
+    .next-condition-container {
+      max-width: 768px;
+      margin: 0 auto;
+      display: none;
+      animation: fadeSlideIn 0.4s ease;
+    }
+    .next-condition-container.visible { display: block; }
+    .next-cond-big-btn {
+      width: 100%;
+      padding: 1.25rem;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--navy);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+      transition: all 0.2s;
+    }
+    .next-cond-big-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(201,168,76,0.45);
+    }
+    .next-cond-big-btn:active { transform: translateY(0); }
 
     /* Transition overlay */
     .transition-overlay {
@@ -251,10 +283,7 @@
           <div class="cond-step" id="stepC">C</div>
         </div>
         <div class="exchange-counter">Exchanges: <strong id="exchangeCount">0</strong>/5</div>
-        <button class="btn btn-danger end-btn-disabled" id="endBtn" onclick="endCurrentCondition()">
-          End Condition
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
+        <!-- Manual end button removed -->
       </div>
     </div>
 
@@ -267,7 +296,7 @@
 
     <!-- ChatGPT-style centered input -->
     <div class="chat-input-zone">
-      <div class="chat-input-inner">
+      <div class="chat-input-inner" id="chatInputInner">
         <textarea class="chat-input" id="chatInput" placeholder="State your argument..." rows="2" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <div class="chat-input-footer">
           <span class="input-hint">Shift+Enter for new line</span>
@@ -275,6 +304,13 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
           </button>
         </div>
+      </div>
+      <!-- Progress to next condition button (hidden initially) -->
+      <div class="next-condition-container" id="nextConditionContainer">
+        <button class="next-cond-big-btn" onclick="endCurrentCondition()">
+          Continue to Next Phase
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
       </div>
     </div>
   </div>
@@ -444,7 +480,12 @@
         const resp = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages, topic: state.topic, condition: currentCondition })
+          body: JSON.stringify({ 
+            messages, 
+            topic: state.topic, 
+            condition: currentCondition,
+            isFinal: exchanges >= 4
+          })
         });
 
         removeTyping();
@@ -477,12 +518,33 @@
         document.getElementById('streaming-msg')?.removeAttribute('id');
         document.getElementById('streaming-bubble')?.removeAttribute('id');
 
-        messages.push({ role: 'assistant', content: aiText });
+        // Automatic Milestone Messages
+        let finalAiText = aiText;
+        const condName = COND_LABELS[currentCondition] || currentCondition;
+
+        if (exchanges === 0) {
+          // Prepend Intro
+          const intro = `[System: You have started ${condName}. You have 5 exchanges for this topic.]\n\n`;
+          finalAiText = intro + aiText;
+          bubble.textContent = finalAiText;
+        } else if (exchanges === 3) {
+          // Append Warning (this is the 4th message being received)
+          const warning = `\n\n[System: After you send your next prompt, the message the AI sends after will be the end of the exchange for this condition.]`;
+          finalAiText = aiText + warning;
+          bubble.textContent = finalAiText;
+        } else if (exchanges === 4) {
+          // Append End Notice (this is the 5th message being received)
+          const endNotice = `\n\n[System: This concludes the exchange for ${condName}. Please click the button below to proceed.]`;
+          finalAiText = aiText + endNotice;
+          bubble.textContent = finalAiText;
+        }
+
+        messages.push({ role: 'assistant', content: finalAiText });
         exchanges++;
         document.getElementById('exchangeCount').textContent = exchanges;
 
         if (exchanges >= REQUIRED_EXCHANGES) {
-          document.getElementById('endBtn').classList.remove('end-btn-disabled');
+          transformInputToButton();
         }
 
       } catch (err) {
@@ -492,6 +554,28 @@
         isStreaming = false;
         document.getElementById('sendBtn').disabled = false;
         document.getElementById('chatInput').focus();
+      }
+    }
+
+    function transformInputToButton() {
+      const inputInner = document.getElementById('chatInputInner');
+      const nextContainer = document.getElementById('nextConditionContainer');
+      const nextBtn = nextContainer ? nextContainer.querySelector('button') : null;
+
+      const doneIdx = CONDITION_ORDER.indexOf(currentCondition);
+      const nextCondition = CONDITION_ORDER[doneIdx + 1];
+
+      if (nextBtn) {
+        if (nextCondition) {
+          nextBtn.innerHTML = `Continue to ${COND_LABELS[nextCondition]} <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+        } else {
+          nextBtn.innerHTML = `Finish Debate & Reflect <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+        }
+      }
+
+      if (inputInner && nextContainer) {
+        inputInner.classList.add('hidden');
+        nextContainer.classList.add('visible');
       }
     }
 
@@ -549,18 +633,8 @@
         return;
       }
 
-      // Show transition overlay
-      const condNames2 = {
-        A: 'Condition A - Vanilla',
-        B: 'Condition B - Prompted',
-        C: 'Condition C - Fine-tuned'
-      };
-      document.getElementById('transTitle').textContent = condNames2[currentCondition] + ' Complete';
-      document.getElementById('transSub').textContent =
-        `You completed ${exchanges} exchanges. Take a breath before the next condition.`;
-      document.getElementById('nextCondBadge').textContent =
-        'Up next: ' + condNames2[nextCondition];
-      document.getElementById('transitionOverlay').classList.add('visible');
+      // Skip overlay, continue directly
+      continueToNext();
     }
 
     function continueToNext() {
@@ -589,5 +663,6 @@
     // Focus input on load
     document.getElementById('chatInput').focus();
   </script>
+  <script src="/dev-tools.js"></script>
 </body>
 </html>
