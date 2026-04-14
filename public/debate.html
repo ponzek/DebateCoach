@@ -337,7 +337,7 @@
     const state = JSON.parse(localStorage.getItem('debate_session_' + sessionId) || '{}');
     const participantState = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
 
-    const REQUIRED_EXCHANGES = 5;
+    const REQUIRED_EXCHANGES = 6; // 1 opener (uncounted) + 5 real exchanges
     const CONDITION_ORDER = ['A', 'B', 'C'];
     const COND_NAMES = { A: 'Vanilla', B: 'Prompted', C: 'Fine-tuned' };
     const COND_BADGES = { A: 'badge-a', B: 'badge-b', C: 'badge-c' };
@@ -484,7 +484,7 @@
             messages, 
             topic: state.topic, 
             condition: currentCondition,
-            isFinal: exchanges >= 4
+            isFinal: exchanges >= 5
           })
         });
 
@@ -523,17 +523,18 @@
         const condName = COND_LABELS[currentCondition] || currentCondition;
 
         if (exchanges === 0) {
-          // Prepend Intro
+          // Opener – first user message, does NOT count as an exchange.
+          // Prepend the intro banner only.
           const intro = `[System: You have started ${condName}. You have 5 exchanges for this topic.]\n\n`;
           finalAiText = intro + aiText;
           bubble.textContent = finalAiText;
-        } else if (exchanges === 3) {
-          // Append Warning (this is the 4th message being received)
+        } else if (exchanges === 4) {
+          // Real exchange 4 of 5 – warn that the next is the last
           const warning = `\n\n[System: After you send your next prompt, the message the AI sends after will be the end of the exchange for this condition.]`;
           finalAiText = aiText + warning;
           bubble.textContent = finalAiText;
-        } else if (exchanges === 4) {
-          // Append End Notice (this is the 5th message being received)
+        } else if (exchanges === 5) {
+          // Real exchange 5 of 5 – closing notice
           const endNotice = `\n\n[System: This concludes the exchange for ${condName}. Please click the button below to proceed.]`;
           finalAiText = aiText + endNotice;
           bubble.textContent = finalAiText;
@@ -541,7 +542,10 @@
 
         messages.push({ role: 'assistant', content: finalAiText });
         exchanges++;
-        document.getElementById('exchangeCount').textContent = exchanges;
+
+        // Display shows real exchanges only (opener is exchange 0, not shown in count)
+        const displayedExchanges = Math.max(0, exchanges - 1);
+        document.getElementById('exchangeCount').textContent = displayedExchanges;
 
         if (exchanges >= REQUIRED_EXCHANGES) {
           transformInputToButton();
