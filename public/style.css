@@ -37,9 +37,10 @@ body {
   background: var(--navy);
   color: var(--text-primary);
   min-height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
   line-height: 1.6;
-  overflow-x: hidden;
-  scrollbar-width: none;
   background-image:
     radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 80%, rgba(36,59,85,0.8) 0%, transparent 60%);
@@ -47,16 +48,16 @@ body {
 
 /* ── Header ── */
 .site-header {
+  flex-top: 0;
+  flex-shrink: 0;
   background: rgba(13,27,42,0.85);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  padding: 0 2rem;
-  height: 68px;
+  padding: 0 1.5rem;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
   z-index: 100;
 }
 .site-logo {
@@ -98,7 +99,7 @@ body {
   background: rgba(26,45,66,0.6);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   backdrop-filter: blur(12px);
 }
 .card-gold {
@@ -321,6 +322,15 @@ body {
   border-radius: 18px;
   line-height: 1.6;
   font-size: 0.95rem;
+}
+.message-bubble p { margin-bottom: 1rem; }
+.message-bubble p:last-child { margin-bottom: 0; }
+.message-bubble ul, .message-bubble ol { margin: 0.5rem 0 1rem 1.25rem; }
+.message-bubble li { margin-bottom: 0.4rem; }
+.message-bubble strong { font-weight: 700; }
+.message-ai .message-bubble p > strong:first-child,
+.message-ai .message-bubble li > strong:first-child {
+  color: var(--gold-light);
 }
 .message-user .message-bubble {
   background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.12));

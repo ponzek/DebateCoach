@@ -157,14 +157,25 @@
       </div>
 
       <div class="dev-section">
-        <div class="dev-header">Jump to Survey Steps</div>
-        <button onclick="devJumpToSurvey(1)">Step 1 (Likert Ratings)</button>
-        <button onclick="devJumpToSurvey(2)">Step 2 (Open Reflection)</button>
+        <div class="dev-header">Post-Condition Survey</div>
+        <div class="dev-grid">
+          <button onclick="window.location.href='/post-condition.html?condition=A'">After A</button>
+          <button onclick="window.location.href='/post-condition.html?condition=B'">After B</button>
+          <button onclick="window.location.href='/post-condition.html?condition=C'">After C</button>
+        </div>
+      </div>
+
+      <div class="dev-section">
+        <div class="dev-header">Comparative Survey</div>
+        <button onclick="devJumpToSurvey(1)">Step 1 (Rankings)</button>
+        <button onclick="devJumpToSurvey(2)">Step 2 (Perception)</button>
+        <button onclick="devJumpToSurvey(3)">Step 3 (Open-Ended)</button>
       </div>
 
       <div class="dev-section">
         <div class="dev-header">System</div>
         <a href="/complete.html">✅ Completion Page</a>
+        <a href="/admin.html">🔐 Admin Login (Logout & Go)</a>
         <button onclick="localStorage.clear(); location.reload();" style="color:#e05c5c; background:rgba(224,92,92,0.1);">🧹 Reset Study (Clear Data)</button>
       </div>
     </div>

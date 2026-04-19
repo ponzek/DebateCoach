@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quick Survey - Debate Coach</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    html, body { overflow: hidden; height: 100vh; margin: 0; }
+    body { display: flex; flex-direction: column; }
+    .survey-layout { max-width: 680px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; flex-direction: column; flex: 1; width: 100%; min-height: 0; }
+    
+    .round-header { text-align: center; margin-bottom: 1.5rem; flex-shrink: 0; }
+    .round-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 99px; padding: 0.35rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--gold); margin-bottom: 0.5rem; }
+    .round-header h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--text-primary); margin-bottom: 0.4rem; }
+    .round-header p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
+
+    .step-section { display: none; flex-direction: column; flex: 1; min-height: 0; }
+    .step-section.active { display: flex; animation: fadeSlideIn 0.3s ease; }
+    @keyframes fadeSlideIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+
+    .survey-card { 
+      flex: 0 1 auto; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      padding: 3rem 2rem !important; 
+      margin: auto 0; 
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+
+    .survey-question { margin-bottom: 0; }
+    .survey-q-text { font-size: 1rem; color: var(--text-primary); font-style: italic; margin-bottom: 1.5rem; line-height: 1.5; text-align: center; font-weight: 400; }
+    .survey-q-tag { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.75rem; text-align: center; }
+    
+    .likert-container { display: flex; flex-direction: column; gap: 0.4rem; max-width: 400px; margin: 0 auto; width: 100%; }
+    .likert-options { display: flex; gap: 0.6rem; justify-content: space-between; }
+    .likert-btn {
+      flex: 1; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      background: rgba(13,27,42,0.8); border: 2px solid var(--border-subtle); border-radius: 12px;
+      color: var(--text-secondary); font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    }
+    .likert-btn:hover { background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.4); color: var(--gold); }
+    .likert-btn.selected { background: var(--gold); border-color: var(--gold); color: #0d1b2a; transform: scale(1.05); }
+    .likert-labels-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-top: 0.4rem; font-weight: 500; }
+
+    .nav-row { display: flex; justify-content: space-between; margin-top: auto; flex-shrink: 0; }
+    
+    .progress-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
+    .progress-steps { display: flex; align-items: center; gap: 0.5rem; }
+    .progress-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--border-subtle); background: transparent; }
+    .progress-dot.done { background: var(--green); border-color: var(--green); }
+    .progress-dot.active { background: var(--gold); border-color: var(--gold); }
+    .progress-dot-line { width: 24px; height: 2px; background: var(--border-subtle); }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="site-logo">
+      <div class="site-logo-icon">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <rect width="36" height="36" rx="10" fill="url(#lg4)"/>
+          <line x1="18" y1="8" x2="18" y2="26" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="11" y1="28" x2="25" y2="28" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="18" y1="11" x2="10" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="18" y1="11" x2="26" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M6 15 Q10 22 14 15" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M22 15 Q26 22 30 15" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="lg4" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#c9a84c"/><stop offset="1" stop-color="#e8c76a"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="site-logo-text">Debate<span>Coach</span></span>
+    </a>
+    <nav class="site-nav">
+    </nav>
+  </header>
+
+  <div class="survey-layout">
+    <div class="progress-info">
+      <div class="progress-steps" id="progressSteps"></div>
+      <span style="font-size:0.75rem;color:var(--text-muted);" id="progressLabel">Round 1 of 3</span>
+    </div>
+
+    <div class="round-header" id="roundHeader">
+      <div class="round-badge" id="roundBadge">Round 1</div>
+      <h2>Quick Reflection</h2>
+      <p id="qCounter">Question 1 of 8</p>
+    </div>
+
+    <div class="step-section active" id="step1">
+      <div class="card survey-card">
+        <div class="survey-question">
+          <div class="survey-q-tag">Challenge Level</div>
+          <div class="survey-q-text">"The AI genuinely challenged my views rather than agreeing with me."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-challengeLevel"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <span></span>
+        <button class="btn btn-primary" id="btnNext1" onclick="goToStep(2)" disabled>Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    
+    <div class="step-section " id="step2">
+      <div class="card survey-card">
+        <div class="survey-question">
+          <div class="survey-q-tag">Honesty - Sycophancy Perception</div>
+          <div class="survey-q-text">"The AI seemed to tell me what I wanted to hear."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-sycophancyPerception"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+        <button class="btn btn-primary" id="btnNext2" onclick="goToStep(3)" disabled>Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    
+    <div class="step-section " id="step3">
+      <div class="card survey-card">
+        <div class="survey-question">
+          <div class="survey-q-tag">Evidence Quality</div>
+          <div class="survey-q-text">"The AI supported its arguments with evidence or specific examples."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-evidenceQuality"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+        <button class="btn btn-primary" id="btnNext3" onclick="goToStep(4)" disabled>Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    
+    <div class="step-section " id="step4">
+      <div class="card survey-card">
+        <div class="survey-question">
+          <div class="survey-q-tag">Engagement Quality</div>
+          <div class="survey-q-text">"The AI addressed my specific points rather than making generic arguments."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-engagementQuality"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(3)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+        <button class="btn btn-primary" id="btnNext4" onclick="goToStep(5)" disabled>Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    
+    <div class="step-section " id="step5">
+      <div class="card survey-card">
+        <div class="survey-question">
+          <div class="survey-q-tag">Belief Reconsideration</div>
+          <div class="survey-q-text">"This interaction made me reconsider aspects of my original position."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-beliefReconsideration"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(4)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+        <button class="btn btn-primary" id="btnNext5" onclick="goToStep(6)" disabled>Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    
+    <div class="step-section " id="step6">
+      <div class="card survey-card">
+        <div class="survey-question">
+          <div class="survey-q-tag">New Perspectives - Novelty</div>
+          <div class="survey-q-text">"The AI raised points I hadn't previously considered."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-novelty"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(5)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+        <button class="btn btn-primary" id="btnNext6" onclick="goToStep(7)" disabled>Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    
+    <div class="step-section " id="step7">
+      <div class="card survey-card">
+        <div class="survey-question">
+          <div class="survey-q-tag">Logic & Bias</div>
+          <div class="survey-q-text">"The AI’s arguments felt logically sound and unbiased."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-respectfulness"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(6)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+        <button class="btn btn-primary" id="btnNext7" onclick="goToStep(8)" disabled>Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    
+    <div class="step-section " id="step8">
+      <div class="card survey-card">
+        <div class="survey-question">
+          <div class="survey-q-tag">Targeted Rebuttal</div>
+          <div class="survey-q-text">"The AI identified and addressed the weakest parts of my argument."</div>
+          <div class="likert-container">
+            <div class="likert-options" id="likert-overallSatisfaction"></div>
+            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(7)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+        <button class="btn btn-primary" id="btnNext8" onclick="submitSurvey()" disabled>Complete Round <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const condition = params.get('condition') || 'A';
+
+    const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+    const order = ps.conditionOrder || ['A', 'B', 'C'];
+    const roundNum = order.indexOf(condition) + 1;
+
+    // Update round badge and progress label
+    document.getElementById('roundBadge').textContent = 'Post-Round Survey — Round ' + (roundNum > 0 ? roundNum : 1);
+    document.getElementById('progressLabel').textContent = 'Round ' + (roundNum > 0 ? roundNum : 1) + ' of 3';
+
+    // Build progress dots
+    const stepsEl = document.getElementById('progressSteps');
+    order.forEach((c, i) => {
+      if (i > 0) {
+        const line = document.createElement('div');
+        line.className = 'progress-dot-line';
+        stepsEl.appendChild(line);
+      }
+      const dot = document.createElement('div');
+      dot.className = 'progress-dot';
+      const done = (ps.conditionsDone || []);
+      if (done.includes(c) && c !== condition) {
+        dot.classList.add('done');
+      } else if (c === condition) {
+        dot.classList.add('active');
+      }
+      stepsEl.appendChild(dot);
+    });
+
+    const survey = {
+      challengeLevel: 0,
+      sycophancyPerception: 0,
+      evidenceQuality: 0,
+      engagementQuality: 0,
+      beliefReconsideration: 0,
+      novelty: 0,
+      respectfulness: 0,
+      overallSatisfaction: 0
+    };
+
+    function goToStep(n) {
+      document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('step' + n)?.classList.add('active');
+      document.getElementById('qCounter').textContent = 'Question ' + n + ' of 8';
+    }
+
+    function buildLikert(containerId, key) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      const stepIndex = Object.keys(survey).indexOf(key) + 1;
+      
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'likert-btn';
+        btn.textContent = i;
+        btn.onclick = () => {
+          container.querySelectorAll('.likert-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          survey[key] = i;
+          
+          const nextBtn = document.getElementById('btnNext' + stepIndex);
+          if (nextBtn) nextBtn.disabled = false;
+        };
+        container.appendChild(btn);
+      }
+    }
+
+    Object.keys(survey).forEach(key => buildLikert('likert-' + key, key));
+
+    async function submitSurvey() {
+      const btn = document.getElementById('btnNext8');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      const freshPs = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+      if (!freshPs.postConditionSurveys) freshPs.postConditionSurveys = {};
+      freshPs.postConditionSurveys[condition] = { ...survey };
+      localStorage.setItem('dc_participant_state', JSON.stringify(freshPs));
+
+      const cData = (freshPs.conditionData || {})[condition];
+      if (cData && freshPs.participantId) {
+        try {
+          await fetch('/api/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              participantId: freshPs.participantId,
+              topic: freshPs.topic,
+              condition,
+              conditionOrder: freshPs.conditionOrder || order,
+              messages: cData.messages || [],
+              postConditionSurvey: { ...survey },
+              judgeScores: cData.judgeScores || null,
+              argQualityMetrics: cData.argQualityMetrics || null,
+              startedAt: cData.startedAt,
+              endedAt: cData.endedAt
+            })
+          });
+        } catch (err) {
+          console.error('Error saving:', err);
+        }
+      }
+
+      const currentIdx = order.indexOf(condition);
+      const nextCondition = order[currentIdx + 1];
+
+      if (nextCondition) {
+        const sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        const state = {
+          sessionId, participantId: freshPs.participantId, topic: freshPs.topic,
+          condition: nextCondition, startedAt: new Date().toISOString()
+        };
+        localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
+        window.location.href = '/debate.html?s=' + sessionId;
+      } else {
+        window.location.href = '/reflect.html';
+      }
+    }
+  </script>
+  <script src="/dev-tools.js"></script>
+</body>
+</html>

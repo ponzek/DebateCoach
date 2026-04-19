@@ -5,35 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Debate - Debate Coach</title>
   <link rel="stylesheet" href="/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     html, body { overflow: hidden; height: 100%; }
     body { display: flex; flex-direction: column; }
 
     .debate-layout { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
 
-    .debate-topbar {
-      background: rgba(13,27,42,0.95);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 0.75rem 1.5rem;
+    .debate-header {
+      background: rgba(13,27,42,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 1.25rem;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      flex-shrink: 0;
     }
-    .topic-display {
-      font-family: 'Playfair Display', serif;
-      font-size: 0.95rem;
-      color: var(--text-primary);
-      font-style: italic;
-      max-width: 420px;
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .header-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-width: 0;
+    }
+    .header-item.stance-item { flex: 1; }
+    .header-label-small {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
+    .topic-display-small, .stance-display-small {
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: visible;
+    }
+    .topic-display-small { font-weight: 500; flex-shrink: 0; }
+    .stance-display-small { color: var(--gold); }
     .topbar-right { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
     .exchange-counter {
-      font-size: 0.78rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
       white-space: nowrap;
     }
@@ -67,7 +89,7 @@
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 2rem 1rem 1rem;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
       gap: 1rem;
@@ -80,7 +102,7 @@
     /* ChatGPT-style input bar - centered with margins */
     .chat-input-zone {
       flex-shrink: 0;
-      padding: 1rem 1.5rem 1.5rem;
+      padding: 0.25rem 1.5rem 0.5rem;
       background: linear-gradient(to top, rgba(13,27,42,1) 60%, rgba(13,27,42,0));
     }
     .chat-input-inner {
@@ -106,19 +128,19 @@
       color: var(--text-primary);
       font-family: 'Inter', sans-serif;
       font-size: 0.95rem;
-      padding: 1.2rem 1.3rem 0.6rem;
+      padding: 0.5rem 1rem 0.1rem;
       outline: none;
       resize: none;
-      min-height: 80px;
+      min-height: 34px;
       max-height: 200px;
-      line-height: 1.55;
+      line-height: 1.5;
     }
     .chat-input::placeholder { color: var(--text-muted); }
     .chat-input-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.4rem 0.7rem 0.5rem 1.1rem;
+      padding: 0.2rem 0.6rem 0.4rem 1rem;
     }
     .input-hint {
       font-size: 0.7rem;
@@ -193,6 +215,30 @@
       box-shadow: 0 6px 24px rgba(201,168,76,0.45);
     }
     .next-cond-big-btn:active { transform: translateY(0); }
+    .next-cond-big-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.85;
+      transform: none;
+      box-shadow: none;
+      background: rgba(201,168,76,0.6);
+    }
+    .next-cond-big-btn:disabled:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.4);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
 
     /* Transition overlay */
     .transition-overlay {
@@ -259,7 +305,7 @@
       <span class="site-logo-text">Debate<span>Coach</span></span>
     </a>
     <nav class="site-nav">
-      <span id="conditionBadge" class="badge badge-a">Condition A</span>
+      <span id="conditionBadge" class="badge badge-b">Round 1</span>
       <a href="/" class="btn btn-ghost" style="padding:0.35rem 0.8rem;font-size:0.8rem;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         New Debate
@@ -268,22 +314,20 @@
   </header>
 
   <div class="debate-layout">
-    <div class="debate-topbar">
-      <div>
-        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Topic</div>
-        <div class="topic-display" id="topicDisplay">Loading...</div>
+    <div class="debate-header">
+      <div class="header-left">
+        <div class="header-item">
+          <span class="header-label-small">Topic</span>
+          <div class="topic-display-small" id="topicDisplay">Loading...</div>
+        </div>
+        <div class="header-item stance-item">
+          <span class="header-label-small">Stance</span>
+          <div class="stance-display-small" id="stanceDisplay">—</div>
+        </div>
       </div>
       <div class="topbar-right">
-        <!-- Condition progress steps -->
-        <div class="condition-progress" id="condProgress">
-          <div class="cond-step" id="stepA">A</div>
-          <div class="cond-step-line"></div>
-          <div class="cond-step" id="stepB">B</div>
-          <div class="cond-step-line"></div>
-          <div class="cond-step" id="stepC">C</div>
-        </div>
+        <div class="condition-progress" id="condProgress"></div>
         <div class="exchange-counter">Exchanges: <strong id="exchangeCount">0</strong>/5</div>
-        <!-- Manual end button removed -->
       </div>
     </div>
 
@@ -315,6 +359,28 @@
     </div>
   </div>
 
+  <!-- Stance overlay - shown conditionally before first condition -->
+  <div class="transition-overlay" id="stanceOverlay">
+    <div class="transition-card" style="max-width:480px;">
+      <div class="transition-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="transition-title">State Your Position</div>
+      <div class="transition-sub">Before the debate begins, briefly state your stance. The AI will argue the opposing side and open first.</div>
+      <div style="background:rgba(13,27,42,0.6);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.25rem;text-align:left;">
+        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Topic</div>
+        <div style="font-size:0.9rem;color:var(--text-primary);font-weight:500;" id="overlayTopicText"></div>
+      </div>
+      <input type="text" id="stanceOverlayInput" placeholder="I believe that..." maxlength="150"
+        style="width:100%;box-sizing:border-box;background:rgba(13,27,42,0.7);border:1px solid var(--border-subtle);border-radius:8px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:0.95rem;padding:0.85rem 1rem;outline:none;margin-bottom:1.25rem;transition:border-color 0.2s;"
+      />
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="submitStance()">
+        Begin Debate
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
   <!-- Condition transition overlay -->
   <div class="transition-overlay" id="transitionOverlay">
     <div class="transition-card">
@@ -337,11 +403,15 @@
     const state = JSON.parse(localStorage.getItem('debate_session_' + sessionId) || '{}');
     const participantState = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
 
-    const REQUIRED_EXCHANGES = 6; // 1 opener (uncounted) + 5 real exchanges
-    const CONDITION_ORDER = ['A', 'B', 'C'];
-    const COND_NAMES = { A: 'Vanilla', B: 'Prompted', C: 'Fine-tuned' };
+    const REQUIRED_EXCHANGES = 5;
+    const participantStateInit = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+    const CONDITION_ORDER = participantStateInit.conditionOrder || ['A', 'B', 'C'];
+    // Neutral labels for participant blinding
+    const roundNum = CONDITION_ORDER.indexOf(state.condition) + 1;
+    const COND_NAMES = { A: 'Round ' + roundNum, B: 'Round ' + roundNum, C: 'Round ' + roundNum };
     const COND_BADGES = { A: 'badge-a', B: 'badge-b', C: 'badge-c' };
-    const COND_LABELS = { A: 'Condition A - Vanilla', B: 'Condition B - Prompted', C: 'Condition C - Fine-tuned' };
+    const COND_LABELS = {};
+    CONDITION_ORDER.forEach((c, i) => { COND_LABELS[c] = 'Round ' + (i + 1); });
 
     let messages = [];
     let exchanges = 0;
@@ -351,22 +421,33 @@
 
     // Init UI
     document.getElementById('topicDisplay').textContent = `"${state.topic || 'Unknown topic'}"`;
+    document.getElementById('overlayTopicText').textContent = state.topic || 'Unknown topic';
     updateConditionBadge(currentCondition);
     updateProgressSteps(participantState.conditionsDone || []);
 
     function updateConditionBadge(cond) {
       const badge = document.getElementById('conditionBadge');
-      badge.textContent = COND_LABELS[cond] || cond;
-      badge.className = `badge ${COND_BADGES[cond] || 'badge-a'}`;
+      badge.textContent = COND_LABELS[cond] || 'Round ' + (CONDITION_ORDER.indexOf(cond) + 1);
+      badge.className = 'badge badge-b';
     }
 
     function updateProgressSteps(done) {
-      CONDITION_ORDER.forEach(c => {
-        const el = document.getElementById('step' + c);
-        if (!el) return;
-        el.classList.remove('done', 'active');
-        if (done.includes(c)) el.classList.add('done');
-        else if (c === currentCondition) el.classList.add('active');
+      // Build progress dots dynamically with round numbers
+      const progressEl = document.getElementById('condProgress');
+      progressEl.innerHTML = '';
+      CONDITION_ORDER.forEach((c, i) => {
+        if (i > 0) {
+          const line = document.createElement('div');
+          line.className = 'cond-step-line';
+          progressEl.appendChild(line);
+        }
+        const step = document.createElement('div');
+        step.className = 'cond-step';
+        step.id = 'step' + c;
+        step.textContent = (i + 1);
+        if (done.includes(c)) step.classList.add('done');
+        else if (c === currentCondition) step.classList.add('active');
+        progressEl.appendChild(step);
       });
     }
 
@@ -461,6 +542,134 @@
       if (el) el.remove();
     }
 
+    async function streamToElement(resp, bubble) {
+      let text = '';
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const lines = decoder.decode(value).split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+            try {
+              const { delta, error } = JSON.parse(data);
+              if (error) throw new Error(error);
+              if (delta) { text += delta; bubble.textContent = text; }
+              document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+            } catch {}
+          }
+        }
+      }
+      return text;
+    }
+
+    function setStanceDisplay(stance) {
+      document.getElementById('stanceDisplay').textContent = `"${stance}"`;
+    }
+
+    function submitStance() {
+      const input = document.getElementById('stanceOverlayInput');
+      const stance = input.value.trim();
+      if (!stance) {
+        input.style.borderColor = 'var(--red)';
+        setTimeout(() => { input.style.borderColor = ''; }, 2000);
+        input.focus();
+        return;
+      }
+      state.stance = stance;
+      localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
+      // Persist stance to participant state so conditions 2 & 3 reuse it
+      const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+      ps.stance = stance;
+      localStorage.setItem('dc_participant_state', JSON.stringify(ps));
+      document.getElementById('stanceOverlay').classList.remove('visible');
+      setStanceDisplay(stance);
+      if (currentCondition === 'A') {
+        sendStanceAsFirstMessage(stance);
+      } else {
+        openDebate(stance);
+      }
+    }
+
+    async function sendStanceAsFirstMessage(stance) {
+      messages.push({ role: 'user', content: stance });
+      renderMessage('user', stance);
+      showTyping();
+      try {
+        const resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages,
+            topic: state.topic,
+            stance: state.stance,
+            condition: currentCondition,
+            isFinal: false
+          })
+        });
+        removeTyping();
+        if (!resp.ok) throw new Error('API error ' + resp.status);
+        const bubble = renderMessage('assistant', '', true);
+        const aiText = await streamToElement(resp, bubble);
+        document.getElementById('streaming-msg')?.removeAttribute('id');
+        document.getElementById('streaming-bubble')?.removeAttribute('id');
+        
+        const finalAiText = `This is the first of our 5 exchanges for this round.\n\n` + aiText;
+        bubble.innerHTML = marked.parse(finalAiText);
+        
+        messages.push({ role: 'assistant', content: aiText });
+        
+        // In the new flow, the stance is the opener and does NOT count as an exchange.
+        // The user now has 5 full follow-up exchanges ahead of them.
+        document.getElementById('exchangeCount').textContent = '0';
+        document.getElementById('chatInput').focus();
+      } catch (err) {
+        removeTyping();
+        renderMessage('assistant', 'Error: ' + err.message);
+      }
+    }
+
+    async function openDebate(stance) {
+      showTyping();
+      try {
+        const resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [],
+            topic: state.topic,
+            stance,
+            condition: currentCondition,
+            isOpener: true
+          })
+        });
+        removeTyping();
+        if (!resp.ok) throw new Error('API error ' + resp.status);
+        const bubble = renderMessage('assistant', '', true);
+        const aiText = await streamToElement(resp, bubble);
+        document.getElementById('streaming-msg')?.removeAttribute('id');
+        document.getElementById('streaming-bubble')?.removeAttribute('id');
+        
+        const finalAiText = aiText;
+        bubble.innerHTML = marked.parse(finalAiText);
+
+        messages.push({ role: 'assistant', content: finalAiText });
+        document.getElementById('exchangeCount').textContent = '0';
+        document.getElementById('chatInput').focus();
+      } catch (err) {
+        removeTyping();
+        renderMessage('assistant', 'Error opening debate: ' + err.message);
+      }
+    }
+
+    // Enter key on stance overlay
+    document.getElementById('stanceOverlayInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') submitStance();
+    });
+
     async function sendMessage() {
       if (isStreaming) return;
       const input = document.getElementById('chatInput');
@@ -480,11 +689,12 @@
         const resp = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            messages, 
-            topic: state.topic, 
+          body: JSON.stringify({
+            messages,
+            topic: state.topic,
+            stance: state.stance,
             condition: currentCondition,
-            isFinal: exchanges >= 5
+            isFinal: exchanges >= 4
           })
         });
 
@@ -492,63 +702,30 @@
         if (!resp.ok) throw new Error('API error ' + resp.status);
 
         const bubble = renderMessage('assistant', '', true);
-        let aiText = '';
-
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const lines = decoder.decode(value).split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') break;
-              try {
-                const { delta, error } = JSON.parse(data);
-                if (error) throw new Error(error);
-                if (delta) { aiText += delta; bubble.textContent = aiText; }
-                document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
-              } catch {}
-            }
-          }
-        }
+        const aiText = await streamToElement(resp, bubble);
 
         document.getElementById('streaming-msg')?.removeAttribute('id');
         document.getElementById('streaming-bubble')?.removeAttribute('id');
 
-        // Automatic Milestone Messages
         let finalAiText = aiText;
-        const condName = COND_LABELS[currentCondition] || currentCondition;
 
-        if (exchanges === 0) {
-          // Opener – first user message, does NOT count as an exchange.
-          // Prepend the intro banner only.
-          const intro = `[System: You have started ${condName}. You have 5 exchanges for this topic.]\n\n`;
-          finalAiText = intro + aiText;
-          bubble.textContent = finalAiText;
+        if (exchanges === 3) {
+          finalAiText = aiText + `\n\nBy the way, after you send your next prompt, the message I send you after will be the end of the exchanges for this round!`;
         } else if (exchanges === 4) {
-          // Real exchange 4 of 5 – warn that the next is the last
-          const warning = `\n\n[System: After you send your next prompt, the message the AI sends after will be the end of the exchange for this condition.]`;
-          finalAiText = aiText + warning;
-          bubble.textContent = finalAiText;
-        } else if (exchanges === 5) {
-          // Real exchange 5 of 5 – closing notice
-          const endNotice = `\n\n[System: This concludes the exchange for ${condName}. Please click the button below to proceed.]`;
-          finalAiText = aiText + endNotice;
-          bubble.textContent = finalAiText;
+          finalAiText = aiText + `\n\nThat wraps up our exchanges for this round! Click the button below to continue.`;
         }
+        
+        bubble.innerHTML = marked.parse(finalAiText);
+        console.log(`[VERIFY] Delivered message for Round ${exchanges} (Condition ${currentCondition})`);
 
         messages.push({ role: 'assistant', content: finalAiText });
         exchanges++;
 
-        // Display shows real exchanges only (opener is exchange 0, not shown in count)
-        const displayedExchanges = Math.max(0, exchanges - 1);
-        document.getElementById('exchangeCount').textContent = displayedExchanges;
+        document.getElementById('exchangeCount').textContent = exchanges;
 
         if (exchanges >= REQUIRED_EXCHANGES) {
           transformInputToButton();
+          startBackgroundAnalysis();
         }
 
       } catch (err) {
@@ -566,15 +743,8 @@
       const nextContainer = document.getElementById('nextConditionContainer');
       const nextBtn = nextContainer ? nextContainer.querySelector('button') : null;
 
-      const doneIdx = CONDITION_ORDER.indexOf(currentCondition);
-      const nextCondition = CONDITION_ORDER[doneIdx + 1];
-
       if (nextBtn) {
-        if (nextCondition) {
-          nextBtn.innerHTML = `Continue to ${COND_LABELS[nextCondition]} <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
-        } else {
-          nextBtn.innerHTML = `Finish Debate & Reflect <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
-        }
+        nextBtn.innerHTML = `Continue to Survey <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
       }
 
       if (inputInner && nextContainer) {
@@ -583,16 +753,13 @@
       }
     }
 
-    async function endCurrentCondition() {
-      if (exchanges < REQUIRED_EXCHANGES) return;
+    let isTransitioning = false;
+    let analysisPromise = null;
 
-      // Save this condition's session data
-      state.messages = messages;
-      state.endedAt = new Date().toISOString();
-      localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
-
-      // Save session to server for this condition
-      const [judgeResp, metricsResp] = await Promise.allSettled([
+    function startBackgroundAnalysis() {
+      if (analysisPromise) return;
+      console.log('Starting background analysis...');
+      analysisPromise = Promise.allSettled([
         fetch('/api/judge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -604,6 +771,26 @@
           body: JSON.stringify({ messages })
         }).then(r => r.json())
       ]);
+    }
+
+    async function endCurrentCondition() {
+      if (exchanges < REQUIRED_EXCHANGES) return;
+      if (isTransitioning) return;
+      isTransitioning = true;
+
+      // Show spinner ONLY if analysis isn't done yet
+      const btn = document.querySelector('.next-cond-big-btn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<div class="btn-spinner"></div> Finishing Analysis...'; }
+
+      // Save this condition's session data
+      state.messages = messages;
+      state.endedAt = new Date().toISOString();
+      localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
+
+      // Ensure background analysis has started (safety check)
+      if (!analysisPromise) startBackgroundAnalysis();
+      
+      const [judgeResp, metricsResp] = await analysisPromise;
 
       const judgeScores = judgeResp.status === 'fulfilled' ? judgeResp.value : null;
       const argQualityMetrics = metricsResp.status === 'fulfilled' ? metricsResp.value : null;
@@ -627,41 +814,23 @@
       };
       localStorage.setItem('dc_participant_state', JSON.stringify(ps));
 
-      // Determine next condition
-      const doneIdx = CONDITION_ORDER.indexOf(currentCondition);
-      const nextCondition = CONDITION_ORDER[doneIdx + 1];
-
-      if (!nextCondition) {
-        // All 3 conditions done - go to survey
-        window.location.href = '/reflect.html?final=1';
-        return;
-      }
-
-      // Skip overlay, continue directly
-      continueToNext();
+      // Always redirect to post-condition survey
+      window.location.href = '/post-condition.html?condition=' + currentCondition;
     }
 
-    function continueToNext() {
-      const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
-      const done = ps.conditionsDone || [];
-      const doneIdx = CONDITION_ORDER.indexOf(currentCondition);
-      const nextCondition = CONDITION_ORDER[doneIdx + 1];
-      if (!nextCondition) {
-        window.location.href = '/reflect.html?final=1';
-        return;
+    // Show stance overlay or skip if stance already saved from a prior condition
+    const savedStance = participantState.stance || state.stance;
+    if (savedStance) {
+      state.stance = savedStance;
+      localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
+      setStanceDisplay(savedStance);
+      if (currentCondition === 'A') {
+        sendStanceAsFirstMessage(savedStance);
+      } else {
+        openDebate(savedStance);
       }
-
-      // Launch next condition debate
-      const newSessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-      const newState = {
-        sessionId: newSessionId,
-        participantId: state.participantId,
-        topic: state.topic,
-        condition: nextCondition,
-        startedAt: new Date().toISOString()
-      };
-      localStorage.setItem('debate_session_' + newSessionId, JSON.stringify(newState));
-      window.location.href = '/debate.html?s=' + newSessionId;
+    } else {
+      document.getElementById('stanceOverlay').classList.add('visible');
     }
 
     // Focus input on load

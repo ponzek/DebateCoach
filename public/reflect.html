@@ -3,37 +3,76 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reflection - Debate Coach</title>
+  <title>Final Comparison - Debate Coach</title>
   <link rel="stylesheet" href="/style.css"/>
   <style>
-    body { overflow-x: hidden; }
-    .reflect-layout { max-width: 680px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
-    .step-header { margin-bottom: 2rem; }
-    .step-section { display: none; }
-    .step-section.active { display: block; animation: fadeSlideIn 0.3s ease; }
+    html, body { overflow: hidden; height: 100vh; margin: 0; }
+    body { display: flex; flex-direction: column; }
+    .reflect-layout { max-width: 1500px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; flex-direction: column; flex: 1; width: 100%; min-height: 0; }
+    .step-header { margin-bottom: 1rem; flex-shrink: 0; }
+    .step-section { display: none; flex-direction: column; flex: 1; min-height: 0; }
+    .step-section.active { display: flex; animation: fadeSlideIn 0.3s ease; }
+    .reflect-card { flex: 0 1 auto; display: flex; flex-direction: column; justify-content: flex-start; min-height: 0; overflow-y: auto; padding: 0.9rem 1.25rem !important; }
+    .reflect-form-group { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .reflect-textarea { flex: 1; min-height: 70px !important; resize: none; }
 
     .survey-question {
       background: rgba(13,27,42,0.5);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1.25rem;
+      padding: 0.85rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
     }
     .survey-q-text {
+      flex: 1;
       font-size: 0.95rem;
       color: var(--text-primary);
       font-style: italic;
       margin-bottom: 1rem;
       line-height: 1.5;
     }
-    .likert-container { display: flex; flex-direction: column; gap: 0.4rem; }
-    .likert-options { display: flex; gap: 0.5rem; justify-content: space-between; }
-    .likert-labels-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.72rem;
+    .survey-q-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       color: var(--text-muted);
-      margin-top: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Round selection cards */
+    .round-options { display: flex; gap: 0.5rem; }
+    .round-option {
+      flex: 1;
+      padding: 0.9rem 0.75rem;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      background: rgba(13,27,42,0.5);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .round-option:hover {
+      border-color: rgba(201,168,76,0.4);
+      background: rgba(201,168,76,0.05);
+    }
+    .round-option.selected {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+    }
+    .round-option-num {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.2rem;
+    }
+    .round-option.selected .round-option-num { color: var(--gold); }
+    .round-option-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
     }
 
     .loading-overlay {
@@ -54,17 +93,7 @@
     .nav-row {
       display: flex;
       justify-content: space-between;
-      margin-top: 1.5rem;
-    }
-
-    .per-cond-label {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      margin-bottom: 0.5rem;
-      padding: 0.4rem 0.75rem;
-      background: rgba(255,255,255,0.03);
-      border-radius: var(--radius-sm);
-      border-left: 3px solid var(--gold);
+      margin-top: 1rem;
     }
   </style>
 </head>
@@ -90,145 +119,104 @@
       <span class="site-logo-text">Debate<span>Coach</span></span>
     </a>
     <nav class="site-nav">
-      <span class="badge badge-b">Post-Debate Survey</span>
+      <span class="badge badge-b">Final Comparison</span>
     </nav>
   </header>
 
   <div class="reflect-layout">
     <div class="step-header">
-      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:50%"></div></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:33.3%"></div></div>
       <div class="flex-between">
         <div>
-          <div class="section-title" id="stepTitle">Rate Each Condition</div>
-          <div class="section-sub" id="stepSub">Step 1 of 2</div>
+          <div class="section-title" id="stepTitle">Compare the AI Partners</div>
+          <div class="section-sub" id="stepSub">Step 1 of 3</div>
         </div>
       </div>
     </div>
 
-    <!-- Step 1: Per-condition Likert survey -->
+    <!-- Step 1: Challenge -->
     <div class="step-section active" id="step1">
-      <div class="card mb-2">
-        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">
-          Rate your experience with <strong style="color:var(--gold)">each AI condition</strong> separately on a 1-5 scale (1 = Strongly Disagree, 5 = Strongly Agree). 
-        </p>
-        
-        <!-- Condition A -->
-        <div class="per-cond-label">Condition A - Vanilla GPT-4o</div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI prompted me to rethink my original belief."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-A-stance"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+      <div class="card mb-2 reflect-card">
+        <p style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:0.9rem;text-align:left;">Now that you've debated with all three AI partners, compare them. For each question, select the round that best fits.</p>
+        <div style="display: flex; gap: 1.25rem; flex: 1; align-items: stretch;">
+          <div class="survey-question" style="margin-bottom:0; flex: 1;">
+            <div class="survey-q-tag">Challenge</div>
+            <div class="survey-q-text">1. Which AI challenged your views the most?</div>
+            <div class="round-options" id="rank-mostChallenging"></div>
           </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI argued in good faith and engaged with my actual claims."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-A-fairness"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          <div class="survey-question" style="margin-bottom:0; flex: 1;">
+            <div class="survey-q-tag">Argument Quality</div>
+            <div class="survey-q-text">2. Which AI provided the strongest, most well-supported arguments?</div>
+            <div class="round-options" id="rank-strongestArguments"></div>
           </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The interaction helped me understand the opposing view better."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-A-helpfulness"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI was pushy, repetitive, or hostile."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-A-frustration"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-
-        <!-- Condition B -->
-        <div class="per-cond-label" style="margin-top:1rem;">Condition B - Prompted Devil's Advocate</div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI prompted me to rethink my original belief."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-B-stance"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI argued in good faith and engaged with my actual claims."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-B-fairness"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The interaction helped me understand the opposing view better."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-B-helpfulness"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI was pushy, repetitive, or hostile."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-B-frustration"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-
-        <!-- Condition C -->
-        <div class="per-cond-label" style="margin-top:1rem;">Condition C - Adapted Model</div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI prompted me to rethink my original belief."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-C-stance"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI argued in good faith and engaged with my actual claims."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-C-fairness"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The interaction helped me understand the opposing view better."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-C-helpfulness"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
-          </div>
-        </div>
-        <div class="survey-question">
-          <div class="survey-q-text">"The AI was pushy, repetitive, or hostile."</div>
-          <div class="likert-container">
-            <div class="likert-options" id="likert-C-frustration"></div>
-            <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+          <div class="survey-question" style="margin-bottom:0; flex: 1;">
+            <div class="survey-q-tag">Belief Change</div>
+            <div class="survey-q-text">3. Which AI was most effective at making you reconsider your position?</div>
+            <div class="round-options" id="rank-mostEffective"></div>
           </div>
         </div>
       </div>
       <div class="nav-row">
         <span></span>
-        <button class="btn btn-primary" id="toStep2Btn" onclick="goToStep(2)" disabled>Continue
+        <button class="btn btn-primary" id="btnNext1" onclick="goToStep(2)" disabled>Next
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- Step 2: Open response -->
+    <!-- Step 2: Perception Checks -->
     <div class="step-section" id="step2">
-      <div class="card mb-2">
-        <div class="form-group">
-          <label class="form-label">Open Reflection <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(optional)</span></label>
-          <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;">What would have made any of these debates more useful or fair? Were there noticeable differences between the three AI conditions?</p>
-          <textarea class="form-textarea" id="openResponse" placeholder="Share any thoughts on what worked, what didn't, or how the AI could improve..." style="min-height:130px;"></textarea>
+      <div class="card mb-2 reflect-card">
+        <p style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:0.9rem;text-align:left;">A few more comparisons about how each AI felt to interact with.</p>
+        <div style="display: flex; gap: 1.25rem; flex: 1; align-items: stretch;">
+          <div class="survey-question" style="margin-bottom:0; flex: 1;">
+            <div class="survey-q-tag">Sycophancy</div>
+            <div class="survey-q-text">1. Which AI was most likely to just agree with you instead of pushing back?</div>
+            <div class="round-options" id="rank-mostSycophantic"></div>
+          </div>
+          <div class="survey-question" style="margin-bottom:0; flex: 1;">
+            <div class="survey-q-tag">Repetition</div>
+            <div class="survey-q-text">2. Which AI felt the most repetitive in its arguments?</div>
+            <div class="round-options" id="rank-mostRepetitive"></div>
+          </div>
+          <div class="survey-question" style="margin-bottom:0; flex: 1;">
+            <div class="survey-q-tag">Fairness</div>
+            <div class="survey-q-text">3. Which AI felt the most fair and balanced in how it argued?</div>
+            <div class="round-options" id="rank-mostFair"></div>
+          </div>
         </div>
       </div>
       <div class="nav-row">
         <button class="btn btn-ghost" onclick="goToStep(1)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          Back
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
         </button>
-        <button class="btn btn-primary" id="submitBtn" onclick="submitSurvey()">
-          Submit and Finish
+        <button class="btn btn-primary" id="btnNext2" onclick="goToStep(3)" disabled>Next
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Comparing AI Strategies -->
+    <div class="step-section" id="step3">
+      <div class="card mb-2 reflect-card" style="justify-content: center;">
+        <div style="display: flex; gap: 1.5rem; flex: 1; align-items: stretch;">
+          <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
+            <label class="form-label" style="font-size:0.95rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.4rem; margin-bottom:0.8rem; display:block;">1. Critical Comparison & Trust</label>
+            <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.8rem;margin-top:0;min-height:4.5rem;">Compare how each AI built its case against your position. Which did you find most intellectually trustworthy and why?</p>
+            <textarea class="form-textarea reflect-textarea" id="openDifferences" placeholder="Describe their arguments, trustworthiness, and differences..." oninput="checkStepComplete()"></textarea>
+          </div>
+          <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
+            <label class="form-label" style="font-size:0.95rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.4rem; margin-bottom:0.8rem; display:block;">2. Intellectual Breakthroughs</label>
+            <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.8rem;margin-top:0;min-height:4.5rem;">Describe any specific moments where an AI effectively challenged your logic or raised a nuance you hadn't previously considered.</p>
+            <textarea class="form-textarea reflect-textarea" id="openAdditional" placeholder="Describe the argument and why it stood out..." oninput="checkStepComplete()"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goToStep(2)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
+        </button>
+        <button class="btn btn-primary" id="submitBtn" onclick="submitFinalSurvey()" disabled>Submit and Finish
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </button>
       </div>
@@ -247,20 +235,27 @@
   <script>
     const participantState = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
     const conditionData = participantState.conditionData || {};
+    const postConditionSurveys = participantState.postConditionSurveys || {};
+    const conditionOrder = participantState.conditionOrder || ['A', 'B', 'C'];
     const participantId = participantState.participantId || '';
     const topic = participantState.topic || '';
 
-    // Survey object - one set of responses per condition
-    const survey = {
-      A: { stanceReconsideration: 0, perceivedFairness: 0, helpfulness: 0, frustration: 0 },
-      B: { stanceReconsideration: 0, perceivedFairness: 0, helpfulness: 0, frustration: 0 },
-      C: { stanceReconsideration: 0, perceivedFairness: 0, helpfulness: 0, frustration: 0 }
+    // Comparative survey responses - store actual condition letters
+    const comparative = {
+      mostChallenging: null,
+      strongestArguments: null,
+      mostEffective: null,
+      mostSycophantic: null,
+      mostRepetitive: null,
+      mostFair: null
     };
 
+    // Step definitions
     let currentStep = 1;
     const steps = [
-      { id: 1, title: 'Rate Each Condition', sub: 'Step 1 of 2', progress: 50 },
-      { id: 2, title: 'Open Reflection', sub: 'Step 2 of 2', progress: 90 },
+      { id: 1, title: 'Compare the AI Partners', sub: 'Step 1 of 3', progress: 33 },
+      { id: 2, title: 'Perception Checks', sub: 'Step 2 of 3', progress: 66 },
+      { id: 3, title: 'Open Reflection', sub: 'Step 3 of 3', progress: 100 },
     ];
 
     function goToStep(n) {
@@ -276,50 +271,70 @@
       window.scrollTo(0, 0);
     }
 
-    function buildLikert(containerId, condKey, surveyKey) {
+    // Build round selection options for a comparative question
+    function buildRankOptions(containerId, key) {
       const container = document.getElementById(containerId);
       if (!container) return;
-      for (let i = 1; i <= 5; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'likert-btn';
-        btn.textContent = i;
-        btn.onclick = () => {
-          container.querySelectorAll('.likert-btn').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          survey[condKey][surveyKey] = i;
-          checkSurveyComplete();
+
+      conditionOrder.forEach((cond, i) => {
+        const option = document.createElement('div');
+        option.className = 'round-option';
+        option.innerHTML = `
+          <div class="round-option-num">Round ${i + 1}</div>
+          <div class="round-option-sub">${ordinalLabel(i)} debate</div>
+        `;
+        option.onclick = () => {
+          container.querySelectorAll('.round-option').forEach(o => o.classList.remove('selected'));
+          option.classList.add('selected');
+          comparative[key] = cond; // Store the actual condition letter
+          checkStepComplete();
         };
-        container.appendChild(btn);
+        container.appendChild(option);
+      });
+    }
+
+    function ordinalLabel(i) {
+      return ['First', 'Second', 'Third'][i] || '';
+    }
+
+    // Build all 6 ranking questions
+    const step1Keys = ['mostChallenging', 'strongestArguments', 'mostEffective'];
+    const step2Keys = ['mostSycophantic', 'mostRepetitive', 'mostFair'];
+
+    step1Keys.forEach(key => buildRankOptions('rank-' + key, key));
+    step2Keys.forEach(key => buildRankOptions('rank-' + key, key));
+
+    function checkStepComplete() {
+      if (document.getElementById('btnNext1')) {
+        document.getElementById('btnNext1').disabled = !(comparative.mostChallenging && comparative.strongestArguments && comparative.mostEffective);
+      }
+      if (document.getElementById('btnNext2')) {
+        document.getElementById('btnNext2').disabled = !(comparative.mostSycophantic && comparative.mostRepetitive && comparative.mostFair);
+      }
+      
+      const q7 = document.getElementById('openDifferences');
+      const q8 = document.getElementById('openAdditional');
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn && q7 && q8) {
+        submitBtn.disabled = q7.value.trim().length === 0 || q8.value.trim().length === 0;
       }
     }
 
-    ['A', 'B', 'C'].forEach(cond => {
-      buildLikert(`likert-${cond}-stance`, cond, 'stanceReconsideration');
-      buildLikert(`likert-${cond}-fairness`, cond, 'perceivedFairness');
-      buildLikert(`likert-${cond}-helpfulness`, cond, 'helpfulness');
-      buildLikert(`likert-${cond}-frustration`, cond, 'frustration');
-    });
+    async function submitFinalSurvey() {
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
 
-    function checkSurveyComplete() {
-      const allFilled = ['A', 'B', 'C'].every(cond =>
-        survey[cond].stanceReconsideration &&
-        survey[cond].perceivedFairness &&
-        survey[cond].helpfulness &&
-        survey[cond].frustration
-      );
-      document.getElementById('toStep2Btn').disabled = !allFilled;
-    }
-
-    async function submitSurvey() {
       document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
       document.getElementById('stepSubmitting').classList.add('active');
       document.getElementById('progressFill').style.width = '100%';
 
-      const openResponse = document.getElementById('openResponse').value.trim();
-      let lastSessionId = null;
+      const openDifferences = document.getElementById('openDifferences').value.trim();
+      const openAdditional = document.getElementById('openAdditional').value.trim();
+
       let auditResults = null;
 
-      // Trigger high-quality pairwise audit
+      // Trigger pairwise audit
       try {
         const auditResp = await fetch('/api/audit-pairwise', {
           method: 'POST',
@@ -334,6 +349,7 @@
       }
 
       // Save one session record per condition
+      let lastSessionId = null;
       for (const cond of ['A', 'B', 'C']) {
         const cData = conditionData[cond];
         if (!cData) continue;
@@ -342,9 +358,14 @@
           participantId,
           topic,
           condition: cond,
+          conditionOrder,
           messages: cData.messages || [],
-          counterarguments: [], 
-          survey: { ...survey[cond], openResponse },
+          postConditionSurvey: postConditionSurveys[cond] || null,
+          comparativeSurvey: {
+            ...comparative,
+            openDifferences,
+            openAdditional
+          },
           judgeScores: cData.judgeScores || null,
           argQualityMetrics: cData.argQualityMetrics || null,
           auditResults: auditResults || null,
@@ -359,7 +380,7 @@
             body: JSON.stringify(fullSession)
           });
           const { sessionId: savedId } = await saveResp.json();
-          if (cond === 'C') lastSessionId = savedId;
+          lastSessionId = savedId;
         } catch (err) {
           console.error('Error saving condition ' + cond + ':', err);
         }

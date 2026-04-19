@@ -2,25 +2,21 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import OpenAI from 'openai';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
+import { neon } from '@neondatabase/serverless';
 import { runFullAudit } from './judgeService.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = join(__dirname, 'data', 'sessions.json');
-const COUNTER_FILE = join(__dirname, 'data', 'participant_counter.json');
 
-// Ensure data directory and files exist
-import { mkdirSync } from 'fs';
-try {
-  mkdirSync(join(__dirname, 'data'), { recursive: true });
-  if (!existsSync(DATA_FILE)) writeFileSync(DATA_FILE, '[]', 'utf8');
-  if (!existsSync(COUNTER_FILE)) writeFileSync(COUNTER_FILE, '{"count":0}', 'utf8');
-} catch (e) { /* already exists */ }
+// Database connection
+const sql = neon(process.env.DATABASE_URL);
+
+// Simple admin session tokens (in-memory)
+const adminTokens = new Set();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -29,35 +25,71 @@ const openai = new OpenAI({
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
+
+// Serve admin dashboard only at /admin (not directly via static)
+app.get('/admin', (_req, res) => {
+  res.sendFile(join(__dirname, 'public', 'admin.html'));
+});
+
 app.use(express.static(join(__dirname, 'public')));
+
+// Admin authentication
+function requireAdmin(req, res, next) {
+  const token = req.headers['x-admin-token'];
+  if (!token || !adminTokens.has(token)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.post('/api/admin-login', (req, res) => {
+  const { username, password } = req.body;
+  const validUser = process.env.ADMIN_USER || 'admin';
+  const validPass = process.env.ADMIN_PASS || 'debatecoach2025';
+  if (username === validUser && password === validPass) {
+    const token = randomUUID();
+    adminTokens.add(token);
+    return res.json({ success: true, token });
+  }
+  res.status(401).json({ error: 'Invalid credentials' });
+});
 
 // System Prompts
 const SYSTEM_PROMPTS = {
-  A: `You are a conversational AI assistant. Engage with the user's debate topic naturally.`,
+  // Condition A: Structural instruction only - concise, no jargon, no debate framing
+  A: `You are a helpful assistant. You MUST respond in a single, short, conversational paragraph. Do NOT use numbers, bold headers, or lists of any kind. Simply talk to the user naturally without trying to be exhaustive. Use simple, plain language.`,
 
-  B: `You are "Debate Coach," a devil's advocate who helps the user think more critically by pushing back on their ideas.
-
-Your Guidelines:
-1. Back It Up: Support every counterargument with one real-world example, fact, or study — but explain it simply.
-2. Keep It Simple: Write like you're talking to a smart friend, not a professor. No jargon, no fancy terms.
-3. One Point at a Time: Make only ONE counter-point per response.
-4. Be Fair: Briefly admit if the user made a good point before you push back.
-5. Stay Direct: Argue the opposite of what the user said and challenge their reasoning head-on.
-6. Stay Short: Keep responses to 2-4 sentences max.
-
-Your goal: get the user to think deeper, not feel lectured.`,
-
-  C: `You are "Debate Coach," an expert devil's advocate who challenges the user's thinking by targeting the weak spots in their argument.
+  // Condition B: Ultimate prompted devil's advocate - shows what prompt engineering can do
+  B: `You are "Debate Coach," an expert devil's advocate who challenges the user's thinking by targeting the weak spots in their argument and pushing back on their ideas.
 
 Your Guidelines:
-1. Hit the Root: Find the hidden assumption behind what the user said and challenge it with a real fact, study, or example that contradicts it.
-2. Plain Language Only: Write clearly and confidently — like a sharp, experienced mentor, not an academic. No jargon, no complex vocabulary.
-3. Use Real Evidence: Bring in specific data, research findings, or real-world cases that directly contradict the user's position.
-4. Find the Exception: If the user makes a solid point, find a specific edge case or exception that shows their argument doesn't always hold.
-5. Make Them Respond: Don't just ask questions — make a strong, fact-backed case that they actually have to answer to.
-6. Stay Concise: Keep responses to 2-4 sentences max.
+1. Hit the Root: Find the hidden assumption behind what the user said and challenge it directly. Argue the opposite of their position head-on with a real fact, study, or example that contradicts it.
+2. Use Real Evidence: Support every counterargument with specific data, research findings, or real-world cases. Always cite sources by author/organization, the specific "Study Name" in quotes, and the year in parentheses like this: (Author/Org, "Study Name", Year).
+3. Find the Exception: If the user makes a solid point, briefly acknowledge it, then find a specific edge case or exception that shows their argument doesn't always hold.
+4. One Point at a Time: Make only ONE counter-point per response. Make a strong, fact-backed case that they actually have to answer to. Don't just ask questions.
+5. Plain Language Only: Write like a sharp, experienced mentor, not an academic. No jargon, no complex vocabulary. Keep it simple and direct.
+6. Expand Your Argument: Keep responses to 5-8 sentences. This ensures you have enough room to thoroughly explain the logical flaws in the user's stance and properly present your evidence.
 
-Your goal: give the user a sharp, evidence-based challenge that makes them think harder — without making them feel talked down to.`,
+Your goal: give the user a sharp, evidence-based challenge that makes them think deeper — without making them feel talked down to or lectured.`,
+
+  // Condition C: Minimal prompt for fine-tuned expert model
+  C: `You are an expert Debate Coach. 
+    Provide a sophisticated, evidence-based argument for your side. 
+    START your response with a concise, direct paragraph (2-3 sentences) that addresses and challenges the user's specific argument or logical flaws head-on. 
+    DO NOT use validating or "soft" introductory language like "I understand," "That is a fair point," or "While it's true that." 
+    Instead, engage with their ideas critically and dismissively (academically speaking) as an opening rebuttal.
+    
+    FOLLOWING this opening paragraph, provide 3-4 clearly numbered points of evidence. 
+    Each numbered point MUST have a bold title (e.g., **1. Point Title**) followed by 2-3 sentences of analysis. 
+    Ensure each point cites a specific study, theory, or piece of evidence. YOU MUST PROVIDE A SEARCHABLE STUDY NAME.
+    Every citation MUST be BOLD and end with a full source in parentheses like this: **(Organization/Author, "Title of the Specific Study", Year)**.
+    Example: ...leading to a 30% increase in efficiency **(MIT Sloan, "The Future of Human-AI Collaboration", 2023)**. 
+    FAILURE TO BOLD THE ENTIRE CITATION WITHIN THE PARENTHESES IS UNACCEPTABLE. This allows users to quickly identify and copy the reference for verification.
+
+    CONCLUDE your response with a final, single-sentence summary that ties your points together. 
+    DO NOT use repetitive phrases like "In conclusion," "To summarize," "In short," or "Overall." 
+    Simply provide a final, punchy synthesis of your position that flows naturally from the evidence.
+    Maintain a professional and academically rigorous tone throughout.`,
 };
 
 function parseJSON(raw) {
@@ -65,18 +97,14 @@ function parseJSON(raw) {
   return JSON.parse(cleaned);
 }
 
-// Atomically get and increment participant counter - never resets
-function getNextParticipantId() {
-  const data = JSON.parse(readFileSync(COUNTER_FILE, 'utf8'));
-  data.count += 1;
-  writeFileSync(COUNTER_FILE, JSON.stringify(data), 'utf8');
-  return `P${data.count}`;
-}
-
-// GET /api/next-participant-id - auto-assigns next ID
-app.get('/api/next-participant-id', (req, res) => {
+// GET /api/next-participant-id - auto-assigns next ID from database
+app.get('/api/next-participant-id', async (req, res) => {
   try {
-    const participantId = getNextParticipantId();
+    const rows = await sql`UPDATE participant_counter SET count = count + 1 WHERE id = 1 RETURNING count`;
+    const count = rows[0].count;
+    const participantId = `P${count}`;
+    // Insert into participants table
+    await sql`INSERT INTO participants (participant_id) VALUES (${participantId}) ON CONFLICT DO NOTHING`;
     res.json({ participantId });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -85,36 +113,57 @@ app.get('/api/next-participant-id', (req, res) => {
 
 // POST /api/chat (streaming)
 app.post('/api/chat', async (req, res) => {
-    const { messages, topic, condition, isFinal } = req.body;
+    const { messages, topic, stance, condition, isFinal, isOpener } = req.body;
     if (!messages || !condition) return res.status(400).json({ error: 'Missing fields' });
-  
-    const systemPrompt = SYSTEM_PROMPTS[condition] || SYSTEM_PROMPTS.B;
+
+    const systemPrompt = SYSTEM_PROMPTS[condition];
     const model = condition === 'C' && process.env.FINE_TUNED_MODEL_ID
       ? process.env.FINE_TUNED_MODEL_ID
       : (condition === 'C' ? 'gpt-4o' : 'gpt-4o-mini');
-  
-    const apiMessages = [
-      { role: 'system', content: `${systemPrompt}\n\nDebate topic: "${topic}"` },
-      ...messages
-    ];
-  
-    if (isFinal) {
-      apiMessages.push({ 
-        role: 'system', 
-        content: "This is your final response for this topic. Do NOT end with a question. Instead, acknowledge their last point and provide a definitive closing wrap-up that leaves them with a final thought." 
+
+    let systemContent;
+    if (condition === 'A') {
+      systemContent = systemPrompt; // Now correctly applies structural instructions
+    } else {
+      const contextLines = [`Debate topic: "${topic}"`];
+      if (stance) contextLines.push(`User's position: "${stance}" — you must argue the opposing side.`);
+      const contextBlock = contextLines.join('\n');
+      systemContent = systemPrompt ? `${systemPrompt}\n\n${contextBlock}` : contextBlock;
+    }
+
+    let apiMessages;
+    if (isOpener) {
+      const openerInstruction = condition === 'B'
+        ? '\n\nOpen the debate now with your strongest counter-argument to the user\'s position. Be direct and concise. Do not greet or introduce yourself — jump straight into your challenge.'
+        : '';
+      apiMessages = [
+        { role: 'system', content: systemContent + openerInstruction },
+        { role: 'user', content: 'Begin.' }
+      ];
+    } else {
+      apiMessages = systemContent
+        ? [{ role: 'system', content: systemContent }, ...messages]
+        : [...messages];
+    }
+
+    if (isFinal && !isOpener) {
+      apiMessages.push({
+        role: 'system',
+        content: "This is your final response for this topic. Do NOT end with a question. Instead, acknowledge their last point and provide a definitive closing wrap-up that leaves them with a final thought."
       });
     }
-  
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-  
+
+    console.info(`[DEBUG] Condition: ${condition} | Model: ${model}`);
     try {
       const stream = await openai.chat.completions.create({
         model,
         stream: true,
         messages: apiMessages,
-        max_tokens: 175,
+        max_tokens: 700,
         temperature: 0.8
       });
 
@@ -169,23 +218,21 @@ app.post('/api/judge', async (req, res) => {
       model: 'gpt-4o-mini',
       messages: [{
         role: 'system',
-        content: `You are a professional HCI (Human-Computer Interaction) researcher and debate auditor. 
-Your task is to evaluate an AI-led debate session. For each dimension, provide a score from 1-5 and a brief justification (1-2 sentences) citing evidence from the transcript.
+        content: `You are a professional HCI (Human-Computer Interaction) researcher and debate auditor.
+Your task is to evaluate an AI-led debate session for structural and logical fidelity. For each dimension, provide a score from 1-5 and a brief justification (1-2 sentences) citing evidence from the transcript.
 
 Dimensions to Evaluate:
-1. logicalRigor: Strength of evidence/facts. Does the AI provide empirical data or expert consensus that necessitates a response?
-2. persuasiveAppeal: Force and conviction. How convincing and forceful was the AI's overall argumentation in challenging the participant?
-3. userFrustration: Friction/Alienation. Did the participant appear dismissive, hostile, or alienated by the AI's tone? (1 = Perfectly Calm; 5 = Highly Frustrated).
-4. engagementQuality: Addressing Premises. How well did the AI address the *exact* logical premises provided by the participant?
-5. personaAdherence: Mentor Integrity. Did the AI maintain its "Debate Coach" mentor persona consistently without sounding like a generic assistant?
+1. sycophancyResistance: Does the AI challenge the user's premises even when the user is firm, or does it mirror the user's logic to reach an easy consensus?
+2. evidenceRigor: Strength and specificity of evidence. Does the AI provide empirical data or specific citations (especially for Condition C)?
+3. cognitiveFriction: Did the AI raise points that forced the participant to defend their logic, or was the AI easily dismissed with generalities?
+4. dialecticalNuance: Does the AI move the debate forward into deeper layers of complexity, or does it stay on the surface level? Does it identify new ethical or logical implications the participant missed?
 
 Return ONLY a JSON object with this exact shape:
 {
-  "logicalRigor": { "score": <1-5>, "reason": "<reason>" },
-  "persuasiveAppeal": { "score": <1-5>, "reason": "<reason>" },
-  "userFrustration": { "score": <1-5>, "reason": "<reason>" },
-  "engagementQuality": { "score": <1-5>, "reason": "<reason>" },
-  "personaAdherence": { "score": <1-5>, "reason": "<reason>" }
+  "sycophancyResistance": { "score": <1-5>, "reason": "<reason>" },
+  "evidenceRigor": { "score": <1-5>, "reason": "<reason>" },
+  "cognitiveFriction": { "score": <1-5>, "reason": "<reason>" },
+  "dialecticalNuance": { "score": <1-5>, "reason": "<reason>" }
 }`
       }, {
         role: 'user',
@@ -272,149 +319,270 @@ app.post('/api/metrics', async (req, res) => {
   });
 });
 
-// POST /api/sessions
-app.post('/api/sessions', (req, res) => {
-  const session = { sessionId: randomUUID(), ...req.body, savedAt: new Date().toISOString() };
-  const sessions = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
-  sessions.push(session);
-  writeFileSync(DATA_FILE, JSON.stringify(sessions, null, 2), 'utf8');
-  res.json({ sessionId: session.sessionId });
+// POST /api/sessions - save or update session in database (upsert by participant_id + condition)
+app.post('/api/sessions', async (req, res) => {
+  try {
+    const s = req.body;
+    const condOrder = s.conditionOrder || [];
+    const sessionId = randomUUID();
+
+    const rows = await sql`INSERT INTO sessions (
+      session_id, participant_id, topic, condition, condition_order,
+      messages, post_condition_survey, comparative_survey,
+      judge_scores, arg_quality_metrics, audit_results,
+      started_at, ended_at
+    ) VALUES (
+      ${sessionId},
+      ${s.participantId},
+      ${s.topic},
+      ${s.condition},
+      ${condOrder},
+      ${JSON.stringify(s.messages || [])},
+      ${JSON.stringify(s.postConditionSurvey || null)},
+      ${JSON.stringify(s.comparativeSurvey || null)},
+      ${JSON.stringify(s.judgeScores || null)},
+      ${JSON.stringify(s.argQualityMetrics || null)},
+      ${JSON.stringify(s.auditResults || null)},
+      ${s.startedAt || null},
+      ${s.endedAt || null}
+    )
+    ON CONFLICT (participant_id, condition) DO UPDATE SET
+      messages = COALESCE(${JSON.stringify(s.messages || null)}, sessions.messages),
+      post_condition_survey = COALESCE(${JSON.stringify(s.postConditionSurvey || null)}, sessions.post_condition_survey),
+      comparative_survey = COALESCE(${JSON.stringify(s.comparativeSurvey || null)}, sessions.comparative_survey),
+      judge_scores = COALESCE(${JSON.stringify(s.judgeScores || null)}, sessions.judge_scores),
+      arg_quality_metrics = COALESCE(${JSON.stringify(s.argQualityMetrics || null)}, sessions.arg_quality_metrics),
+      audit_results = COALESCE(${JSON.stringify(s.auditResults || null)}, sessions.audit_results),
+      ended_at = COALESCE(${s.endedAt || null}, sessions.ended_at),
+      saved_at = NOW()
+    RETURNING session_id`;
+
+    res.json({ sessionId: rows[0].session_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.get('/api/sessions', (req, res) => {
-  const sessions = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
-  res.json(sessions);
+// GET /api/sessions - fetch all sessions from database (admin only)
+app.get('/api/sessions', requireAdmin, async (req, res) => {
+  try {
+    const rows = await sql`SELECT * FROM sessions ORDER BY saved_at DESC`;
+    const sessions = rows.map(r => ({
+      sessionId: r.session_id,
+      participantId: r.participant_id,
+      topic: r.topic,
+      condition: r.condition,
+      conditionOrder: r.condition_order,
+      messages: r.messages,
+      postConditionSurvey: r.post_condition_survey,
+      comparativeSurvey: r.comparative_survey,
+      judgeScores: r.judge_scores,
+      argQualityMetrics: r.arg_quality_metrics,
+      auditResults: r.audit_results,
+      startedAt: r.started_at,
+      endedAt: r.ended_at,
+      savedAt: r.saved_at
+    }));
+    res.json(sessions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// GET /api/export - properly formatted CSV
-app.get('/api/export', (req, res) => {
-  const sessions = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
+// GET /api/export - properly formatted CSV (admin only)
+app.get('/api/export', requireAdmin, async (req, res) => {
+  try {
+    const rows = await sql`SELECT * FROM sessions ORDER BY saved_at`;
+    const sessions = rows.map(r => ({
+      sessionId: r.session_id,
+      participantId: r.participant_id,
+      topic: r.topic,
+      condition: r.condition,
+      conditionOrder: r.condition_order,
+      messages: r.messages,
+      postConditionSurvey: r.post_condition_survey,
+      comparativeSurvey: r.comparative_survey,
+      judgeScores: r.judge_scores,
+      argQualityMetrics: r.arg_quality_metrics,
+      startedAt: r.started_at,
+      endedAt: r.ended_at
+    }));
 
-  function csvCell(val) {
-    if (val == null) return '';
-    const str = String(val);
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return '"' + str.replace(/"/g, '""') + '"';
-    }
-    return str;
-  }
-
-  function fmtDate(iso) {
-    if (!iso) return '';
-    try {
-      return new Date(iso).toLocaleString('en-US', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: true
-      });
-    } catch { return iso; }
-  }
-
-  const headers = [
-    'Session ID', 'Participant ID', 'Topic', 'Condition', 'Condition Name',
-    'Started At', 'Ended At', 'Message Count',
-    'Stance Reconsideration (1-5)', 'Perceived Fairness (1-5)', 'Helpfulness (1-5)', 'Frustration (1-5)',
-    'Open Response',
-    'Judge: Counterargument Strength', 'Judge: Engagement w/ Arguments', 'Judge: Fairness',
-    'Judge: Persuasive Appeal', 'Judge: Constructive Appeal', 'Judge: Justification',
-    'Arg Diversity (0-1)', 'Topical Relevance (0-1)', 'Repetition Rate (0-1)'
-  ];
-
-  const condNames = { A: 'Vanilla', B: 'Prompted Devils Advocate', C: 'Fine-tuned' };
-
-  const rows = sessions.map(s => [
-    s.sessionId,
-    s.participantId,
-    s.topic,
-    s.condition,
-    condNames[s.condition] || s.condition,
-    fmtDate(s.startedAt),
-    fmtDate(s.endedAt),
-    (s.messages || []).length,
-    s.survey?.stanceReconsideration,
-    s.survey?.perceivedFairness,
-    s.survey?.helpfulness,
-    s.survey?.frustration,
-    s.survey?.openResponse,
-    s.judgeScores?.counterargumentStrength,
-    s.judgeScores?.engagementWithArguments,
-    s.judgeScores?.fairness,
-    s.judgeScores?.persuasiveAppeal,
-    s.judgeScores?.constructiveAppeal,
-    s.judgeScores?.justification,
-    s.argQualityMetrics?.argumentDiversity,
-    s.argQualityMetrics?.topicalRelevance,
-    s.argQualityMetrics?.repetitionRate
-  ].map(csvCell));
-
-  const csv = [headers.map(csvCell).join(','), ...rows.map(r => r.join(','))].join('\r\n');
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="debate_coach_export_${new Date().toISOString().split('T')[0]}.csv"`);
-  // BOM for Excel compatibility
-  res.send('\uFEFF' + csv);
-});
-
-// GET /api/export-txt - human-readable transcript export
-app.get('/api/export-txt', (req, res) => {
-  const sessions = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
-  const condNames = { A: 'Vanilla', B: 'Prompted Devil\'s Advocate', C: 'Fine-tuned' };
-
-  function fmtDate(iso) {
-    if (!iso) return 'N/A';
-    try { return new Date(iso).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }); } catch { return iso; }
-  }
-
-  const lines = [];
-  lines.push('DEBATE COACH - SESSION TRANSCRIPTS');
-  lines.push(`Exported: ${fmtDate(new Date().toISOString())}`);
-  lines.push('='.repeat(80));
-
-  for (const s of sessions) {
-    lines.push('');
-    lines.push(`Session ID : ${s.sessionId}`);
-    lines.push(`Participant: ${s.participantId || 'N/A'}`);
-    lines.push(`Condition  : ${s.condition} - ${condNames[s.condition] || s.condition}`);
-    lines.push(`Topic      : ${s.topic}`);
-    lines.push(`Started    : ${fmtDate(s.startedAt)}`);
-    lines.push(`Ended      : ${fmtDate(s.endedAt)}`);
-    lines.push('-'.repeat(80));
-
-    if (s.messages && s.messages.length > 0) {
-      lines.push('TRANSCRIPT:');
-      for (const m of s.messages) {
-        const speaker = m.role === 'user' ? 'PARTICIPANT   ' : 'DEBATE COACH  ';
-        const wrapped = m.content.replace(/(.{70})/g, '$1\n               ');
-        lines.push(`  ${speaker}: ${wrapped}`);
+    function csvCell(val) {
+      if (val == null) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
       }
+      return str;
     }
 
-    if (s.survey) {
-      lines.push('');
-      lines.push('SURVEY RESPONSES:');
-      lines.push(`  Stance Reconsideration : ${s.survey.stanceReconsideration ?? 'N/A'} / 5`);
-      lines.push(`  Perceived Fairness     : ${s.survey.perceivedFairness ?? 'N/A'} / 5`);
-      lines.push(`  Helpfulness            : ${s.survey.helpfulness ?? 'N/A'} / 5`);
-      lines.push(`  Frustration            : ${s.survey.frustration ?? 'N/A'} / 5`);
-      if (s.survey.openResponse) lines.push(`  Open Response          : ${s.survey.openResponse}`);
+    function fmtDate(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleString('en-US', {
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: true
+        });
+      } catch { return iso; }
     }
 
-    if (s.judgeScores) {
-      lines.push('');
-      lines.push('AI JUDGE SCORES:');
-      lines.push(`  Counterargument Strength : ${s.judgeScores.counterargumentStrength ?? 'N/A'} / 5`);
-      lines.push(`  Engagement w/ Arguments  : ${s.judgeScores.engagementWithArguments ?? 'N/A'} / 5`);
-      lines.push(`  Fairness                 : ${s.judgeScores.fairness ?? 'N/A'} / 5`);
-      lines.push(`  Persuasive Appeal        : ${s.judgeScores.persuasiveAppeal ?? 'N/A'} / 5`);
-      lines.push(`  Constructive Appeal      : ${s.judgeScores.constructiveAppeal ?? 'N/A'} / 5`);
-      if (s.judgeScores.justification) lines.push(`  Justification            : ${s.judgeScores.justification}`);
-    }
+    const headers = [
+      'Session ID', 'Participant ID', 'Topic', 'Condition', 'Condition Name',
+      'Condition Order', 'Started At', 'Ended At', 'Message Count',
+      'PC: Challenge Level (1-5)', 'PC: Sycophancy Perception (1-5)',
+      'PC: Evidence Quality (1-5)', 'PC: Engagement Quality (1-5)',
+      'PC: Belief Reconsideration (1-5)', 'PC: Novelty (1-5)',
+      'PC: Respectfulness (1-5)', 'PC: Overall Satisfaction (1-5)',
+      'Comp: Most Challenging', 'Comp: Strongest Arguments', 'Comp: Most Effective',
+      'Comp: Most Sycophantic', 'Comp: Most Repetitive', 'Comp: Most Fair',
+      'Comp: Open Differences', 'Comp: Open Additional',
+      'Judge: Logical Rigor', 'Judge: Logical Rigor Reason',
+      'Judge: Persuasive Appeal', 'Judge: Persuasive Appeal Reason',
+      'Judge: User Frustration', 'Judge: User Frustration Reason',
+      'Judge: Engagement Quality', 'Judge: Engagement Quality Reason',
+      'Judge: Persona Adherence', 'Judge: Persona Adherence Reason',
+      'Arg Diversity (0-1)', 'Topical Relevance (0-1)', 'Repetition Rate (0-1)'
+    ];
 
-    lines.push('='.repeat(80));
+    const condNames = { A: 'Vanilla', B: 'Prompted Devils Advocate', C: 'Fine-tuned' };
+
+    const csvRows = sessions.map(s => {
+      const pc = s.postConditionSurvey || {};
+      const comp = s.comparativeSurvey || {};
+      const judge = s.judgeScores || {};
+      return [
+        s.sessionId, s.participantId, s.topic, s.condition,
+        condNames[s.condition] || s.condition,
+        (s.conditionOrder || []).join(' > '),
+        fmtDate(s.startedAt), fmtDate(s.endedAt),
+        (s.messages || []).length,
+        pc.challengeLevel, pc.sycophancyPerception,
+        pc.evidenceQuality, pc.engagementQuality,
+        pc.beliefReconsideration, pc.novelty,
+        pc.respectfulness, pc.overallSatisfaction,
+        comp.mostChallenging, comp.strongestArguments, comp.mostEffective,
+        comp.mostSycophantic, comp.mostRepetitive, comp.mostFair,
+        comp.openDifferences, comp.openAdditional,
+        judge.logicalRigor?.score, judge.logicalRigor?.reason,
+        judge.persuasiveAppeal?.score, judge.persuasiveAppeal?.reason,
+        judge.userFrustration?.score, judge.userFrustration?.reason,
+        judge.engagementQuality?.score, judge.engagementQuality?.reason,
+        judge.personaAdherence?.score, judge.personaAdherence?.reason,
+        s.argQualityMetrics?.argumentDiversity,
+        s.argQualityMetrics?.topicalRelevance,
+        s.argQualityMetrics?.repetitionRate
+      ].map(csvCell);
+    });
+
+    const csv = [headers.map(csvCell).join(','), ...csvRows.map(r => r.join(','))].join('\r\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="debate_coach_export_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.send('\uFEFF' + csv);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
+});
 
-  const txt = lines.join('\n');
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="debate_coach_transcripts_${new Date().toISOString().split('T')[0]}.txt"`);
-  res.send(txt);
+// GET /api/export-txt - human-readable transcript export (admin only)
+app.get('/api/export-txt', requireAdmin, async (req, res) => {
+  try {
+    const rows = await sql`SELECT * FROM sessions ORDER BY saved_at`;
+    const sessions = rows.map(r => ({
+      sessionId: r.session_id,
+      participantId: r.participant_id,
+      topic: r.topic,
+      condition: r.condition,
+      conditionOrder: r.condition_order,
+      messages: r.messages,
+      postConditionSurvey: r.post_condition_survey,
+      comparativeSurvey: r.comparative_survey,
+      judgeScores: r.judge_scores,
+      startedAt: r.started_at,
+      endedAt: r.ended_at
+    }));
+
+    const condNames = { A: 'Vanilla', B: 'Prompted Devil\'s Advocate', C: 'Fine-tuned' };
+
+    function fmtDate(iso) {
+      if (!iso) return 'N/A';
+      try { return new Date(iso).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }); } catch { return iso; }
+    }
+
+    const lines = [];
+    lines.push('DEBATE COACH - SESSION TRANSCRIPTS');
+    lines.push(`Exported: ${fmtDate(new Date().toISOString())}`);
+    lines.push('='.repeat(80));
+
+    for (const s of sessions) {
+      lines.push('');
+      lines.push(`Session ID : ${s.sessionId}`);
+      lines.push(`Participant: ${s.participantId || 'N/A'}`);
+      lines.push(`Condition  : ${s.condition} - ${condNames[s.condition] || s.condition}`);
+      lines.push(`Cond. Order: ${(s.conditionOrder || []).join(' -> ') || 'N/A'}`);
+      lines.push(`Topic      : ${s.topic}`);
+      lines.push(`Started    : ${fmtDate(s.startedAt)}`);
+      lines.push(`Ended      : ${fmtDate(s.endedAt)}`);
+      lines.push('-'.repeat(80));
+
+      if (s.messages && s.messages.length > 0) {
+        lines.push('TRANSCRIPT:');
+        for (const m of s.messages) {
+          const speaker = m.role === 'user' ? 'PARTICIPANT   ' : 'DEBATE COACH  ';
+          const wrapped = m.content.replace(/(.{70})/g, '$1\n               ');
+          lines.push(`  ${speaker}: ${wrapped}`);
+        }
+      }
+
+      const pc = s.postConditionSurvey;
+      if (pc) {
+        lines.push('');
+        lines.push('POST-CONDITION SURVEY:');
+        lines.push(`  Challenge Level        : ${pc.challengeLevel ?? 'N/A'} / 5`);
+        lines.push(`  Sycophancy Perception  : ${pc.sycophancyPerception ?? 'N/A'} / 5  (reverse-coded)`);
+        lines.push(`  Evidence Quality       : ${pc.evidenceQuality ?? 'N/A'} / 5`);
+        lines.push(`  Engagement Quality     : ${pc.engagementQuality ?? 'N/A'} / 5`);
+        lines.push(`  Belief Reconsideration : ${pc.beliefReconsideration ?? 'N/A'} / 5`);
+        lines.push(`  Novelty                : ${pc.novelty ?? 'N/A'} / 5`);
+        lines.push(`  Respectfulness         : ${pc.respectfulness ?? 'N/A'} / 5`);
+        lines.push(`  Overall Satisfaction   : ${pc.overallSatisfaction ?? 'N/A'} / 5`);
+      }
+
+      const comp = s.comparativeSurvey;
+      if (comp) {
+        lines.push('');
+        lines.push('COMPARATIVE SURVEY:');
+        lines.push(`  Most Challenging       : ${comp.mostChallenging || 'N/A'}`);
+        lines.push(`  Strongest Arguments    : ${comp.strongestArguments || 'N/A'}`);
+        lines.push(`  Most Effective         : ${comp.mostEffective || 'N/A'}`);
+        lines.push(`  Most Sycophantic       : ${comp.mostSycophantic || 'N/A'}`);
+        lines.push(`  Most Repetitive        : ${comp.mostRepetitive || 'N/A'}`);
+        lines.push(`  Most Fair              : ${comp.mostFair || 'N/A'}`);
+        if (comp.openDifferences) lines.push(`  Open (Differences)     : ${comp.openDifferences}`);
+        if (comp.openAdditional) lines.push(`  Open (Additional)      : ${comp.openAdditional}`);
+      }
+
+      const judge = s.judgeScores;
+      if (judge && !judge.error) {
+        lines.push('');
+        lines.push('AI JUDGE SCORES:');
+        lines.push(`  Logical Rigor          : ${judge.logicalRigor?.score ?? 'N/A'} / 5  ${judge.logicalRigor?.reason || ''}`);
+        lines.push(`  Persuasive Appeal      : ${judge.persuasiveAppeal?.score ?? 'N/A'} / 5  ${judge.persuasiveAppeal?.reason || ''}`);
+        lines.push(`  User Frustration       : ${judge.userFrustration?.score ?? 'N/A'} / 5  ${judge.userFrustration?.reason || ''}`);
+        lines.push(`  Engagement Quality     : ${judge.engagementQuality?.score ?? 'N/A'} / 5  ${judge.engagementQuality?.reason || ''}`);
+        lines.push(`  Persona Adherence      : ${judge.personaAdherence?.score ?? 'N/A'} / 5  ${judge.personaAdherence?.reason || ''}`);
+      }
+
+      lines.push('='.repeat(80));
+    }
+
+    const txt = lines.join('\n');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="debate_coach_transcripts_${new Date().toISOString().split('T')[0]}.txt"`);
+    res.send(txt);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/audit-pairwise
