@@ -1,130 +1,62 @@
-# Debate Coach 🎤⚖️
+# Debate Coach
 
-> *"Devil's Advocate" AI Research Prototype — Group 44, Spring 2026*
+Debate Coach is a research platform designed to study human-AI interaction in controversial debates. The tool allows researchers to test how different AI configurations (Baseline, Prompted, and Fine-tuned) affect user beliefs, the quality of arguments, and the presence of AI sycophancy.
 
-This is a research topic for practice debating controversial topics. We can text our AI if it will do the common thing to agree quickly, or pushback. With an extra step of seeing if prompt engineering would suffice or we need to finetune.
+This project is part of a Group 44 HCI Research Study for Spring 2026.
 
-A human/AI interaction research tool that challenges users' beliefs constructively. Compares three AI conditions in a within-subjects pilot study.
+## Interaction Flow
+Every participant session follows a structured research path to ensure consistent data collection:
+1. **Topic Selection**: The user chooses a topic and states their initial stance.
+2. **Phase 1 to 3**: The user engages in three debate rounds, each with a different AI model (the order is randomized).
+3. **Turn Limit**: Every round consists of 1 opener from the AI followed by exactly 5 back-and-forth exchanges.
+4. **Surveys**: After each round, users fill out a quick survey. A final comparison survey is completed at the end.
+5. **AI Audit**: Our "LLM Judge" automatically analyzes every transcript to check for logical rigor and bias.
 
-## Quick Start
+## Setup Instructions
 
-### 1. Install dependencies
-```bash
-npm install
-```
+### Prerequisites
+You must have Node.js installed on your computer.
+*   **Windows / Mac**: Download and install the latest "LTS" version from [nodejs.org](https://nodejs.org/).
 
-### 2. Add your OpenAI API key
-```bash
-cp .env.example .env
-# Edit .env and add your key
-```
+### 1. Download the Project
+Download the repository as a ZIP file and extract it to a folder on your computer.
 
-### 3. Run the server
-```bash
-npm start          # Production
-npm run dev        # Development (auto-reload)
-```
+### 2. Configure Environment Variables
+You need to create a file named `.env` in the root folder of the project. You will need to obtain keys from the following services:
 
-Open [http://localhost:3000](http://localhost:3000)
+*   **OPENAI_API_KEY**: Create an account at [platform.openai.com](https://platform.openai.com/) and generate an API key. This powers the AI debate partners and the AI Judge.
+*   **DATABASE_URL**: Sign up for a free Postgres database at [neon.tech](https://neon.tech/). Copy the "Connection String" and paste it here.
+*   **FINE_TUNED_MODEL_ID**: If you have trained a specific model for Condition C, enter its ID here. If not, the system will default to a standard model.
+*   **ADMIN_USER and ADMIN_PASS**: Create your own username and password for the research dashboard.
 
----
+### 3. Installation
 
-## Study Design
+#### **On Windows**
+1.  Open the project folder.
+2.  Press `Shift + Right Click` in the folder and select "Open PowerShell window here."
+3.  Type `npm install` and press Enter.
+4.  Once finished, type `npm start` to launch the app.
 
-| Condition | Description |
-|-----------|-------------|
-| **A** | Vanilla GPT-4o (no special prompting) |
-| **B** | Prompted devil's advocate (engineered system prompt) |
-| **C** | Fine-tuned model (trained on debate data) |
+#### **On Mac**
+1.  Open the project folder.
+2.  Right-click the folder and select "New Terminal at Folder."
+3.  Type `npm install` and press Enter.
+4.  Once finished, type `npm start` to launch the app.
 
-**Design**: Within-subjects — each participant completes all 3 conditions in counterbalanced order.
+## Research Dashboard
+Once the server is running, researchers can access the dashboard to view results in real-time.
 
-**Survey**: 1–5 Likert scale for:
-1. Stance Reconsideration
-2. Perceived Fairness
-3. Helpfulness
-4. Frustration
+*   **URL**: `http://localhost:3000/admin`
+*   **Login**: Use the `ADMIN_USER` and `ADMIN_PASS` you set in your `.env` file.
+*   **Features**:
+    *   **Dashboard**: View high-level stats like recruitment progress and belief shift rates.
+    *   **Chat Library**: Read every transcript from every condition.
+    *   **Survey Results**: View all participant feedback and rankings.
+    *   **LLM Audit**: Read the AI Judge's detailed reasoning for its quality scores.
 
----
-
-## File Structure
-
-```
-DebateAI/
-├── server.js                   # Express API server
-├── package.json
-├── .env.example                # Copy to .env and fill in keys
-├── public/
-│   ├── style.css               # Global design system
-│   ├── index.html              # Landing / topic selection
-│   ├── debate.html             # Chat interface
-│   ├── reflect.html            # Post-debate survey
-│   ├── complete.html           # Completion screen
-│   └── admin.html              # Researcher dashboard
-├── data/
-│   ├── sessions.json           # Persistent session storage (auto-created)
-│   └── sample_transcripts/     # Put transcript JSONs here for fine-tuning
-└── scripts/
-    ├── prepare_finetune.js     # Converts transcripts → JSONL
-    └── launch_finetune.js      # Uploads & starts fine-tuning job
-```
-
----
-
-## API Endpoints
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/api/chat` | Streaming AI response (SSE) |
-| POST | `/api/reflect` | Generate counterargument summary |
-| POST | `/api/judge` | LLM-as-Judge scoring (5 properties) |
-| POST | `/api/metrics` | Argument quality metrics |
-| POST | `/api/sessions` | Save session to disk |
-| GET  | `/api/sessions` | List all sessions |
-| GET  | `/api/export` | Download sessions as CSV |
-
----
-
-## Fine-Tuning (Condition C)
-
-1. Place debate transcripts in `data/sample_transcripts/` as JSON files:
-```json
-{
-  "topic": "Universal Basic Income",
-  "exchanges": [
-    { "user": "I think UBI is great because…", "assistant": "I understand, but consider…" }
-  ]
-}
-```
-
-2. Prepare training data:
-```bash
-node scripts/prepare_finetune.js
-```
-
-3. Launch fine-tuning job:
-```bash
-node scripts/launch_finetune.js
-```
-
-4. Copy the resulting model ID into `.env`:
-```
-FINE_TUNED_MODEL_ID=ft:gpt-4o-mini:your-org:debate-coach:xxxxx
-```
-
----
-
-## Researcher Dashboard
-
-Visit [http://localhost:3000/admin.html](http://localhost:3000/admin.html) for:
-- Session table filtered by condition
-- Bar charts: survey scores, LLM-as-Judge scores, argument quality metrics
-- CSV export of all session data
-
----
-
-## References
-
-1. Hu et al. (2025). Multi-agent debate for LLM judges. arXiv:2510.12697
-2. Rambow et al. (2025). Debate-to-write. ACL 2025.
-3. Zheng et al. (2023). Judging LLM-as-a-judge. arXiv:2306.05685
+## Key Research Metrics
+The system automatically tracks the following data points:
+*   **Sycophancy Resistance**: Does the AI just agree with the user?
+*   **Logical Neutrality**: Are the arguments grounded in formal logic?
+*   **Rebuttal Precision**: Did the AI attack the weakest parts of the user's logic?
+*   **Cognitive Friction**: Did the AI force the user to think harder and defend their view?
