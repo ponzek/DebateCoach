@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Debate - Debate Coach</title>
   <link rel="stylesheet" href="/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -181,6 +181,59 @@
     }
     .welcome-msg p { font-size: 0.88rem; line-height: 1.6; }
 
+    /* Typing status label */
+    .typing-status {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      font-style: italic;
+    }
+
+    /* Error indicator */
+    .error-indicator {
+      align-self: flex-start;
+      max-width: 65%;
+      animation: fadeSlideIn 0.25s ease;
+    }
+    .error-bubble {
+      background: rgba(224,92,92,0.08);
+      border: 1px solid rgba(224,92,92,0.3);
+      border-radius: 14px;
+      border-top-left-radius: 4px;
+      padding: 0.85rem 1.1rem;
+    }
+    .error-bubble-header {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.45rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #ff8f8f;
+    }
+    .error-bubble-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 0.65rem;
+      line-height: 1.4;
+    }
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      background: rgba(224,92,92,0.14);
+      border: 1px solid rgba(224,92,92,0.35);
+      color: #ff9f9f;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .retry-btn:hover { background: rgba(224,92,92,0.24); }
+
     /* End / transition buttons */
     .end-btn-disabled { display: none; } /* Hidden entirely now */
 
@@ -322,7 +375,7 @@
         </div>
         <div class="header-item stance-item">
           <span class="header-label-small">Stance</span>
-          <div class="stance-display-small" id="stanceDisplay">—</div>
+          <div class="stance-display-small" id="stanceDisplay">-</div>
         </div>
       </div>
       <div class="topbar-right">
@@ -334,7 +387,7 @@
     <div class="chat-area" id="chatArea">
       <div class="welcome-msg" id="welcomeMsg">
         <h2>Your debate partner is ready.</h2>
-        <p>State your position on the topic and the AI will argue the other side. Challenge it - it's here to make you think harder.</p>
+        <p>State your position and the AI will argue the other side. This round has <strong>5 back-and-forth exchanges</strong>. After your 5th exchange, a <em>"Continue to Survey"</em> button will appear at the bottom  - <strong>you must click it to move to the next phase.</strong></p>
       </div>
     </div>
 
@@ -343,7 +396,7 @@
       <div class="chat-input-inner" id="chatInputInner">
         <textarea class="chat-input" id="chatInput" placeholder="State your argument..." rows="2" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <div class="chat-input-footer">
-          <span class="input-hint">Shift+Enter for new line</span>
+          <span class="input-hint">Shift+Enter for new line &nbsp;·&nbsp; 5 exchanges per round</span>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send message" aria-label="Send message">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
           </button>
@@ -366,7 +419,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       </div>
       <div class="transition-title">State Your Position</div>
-      <div class="transition-sub">Before the debate begins, briefly state your stance. The AI will argue the opposing side and open first.</div>
+      <div class="transition-sub">Before the debate begins, briefly state your position on the topic below. The AI will argue the opposing side and open first. You will have <strong>5 exchanges</strong>  - after the 5th, a button will appear. Click it to continue to the survey.</div>
       <div style="background:rgba(13,27,42,0.6);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.25rem;text-align:left;">
         <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Topic</div>
         <div style="font-size:0.9rem;color:var(--text-primary);font-weight:500;" id="overlayTopicText"></div>
@@ -388,7 +441,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <div class="transition-title" id="transTitle">Condition A Complete</div>
-      <div class="transition-sub" id="transSub">Great work. Take a moment before the next round.</div>
+      <div class="transition-sub" id="transSub">Round complete. Click below to proceed  - the next round also requires 5 exchanges before you can move on.</div>
       <div class="next-cond-badge" id="nextCondBadge">Up next: Condition B - Prompted</div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="continueToNext()">
         Continue to Next Condition
@@ -400,6 +453,12 @@
   <script>
     const params = new URLSearchParams(location.search);
     const sessionId = params.get('s');
+
+    // Guard: redirect home if there is no valid session in storage
+    if (!sessionId || !localStorage.getItem('debate_session_' + sessionId)) {
+      window.location.replace('/');
+    }
+
     const state = JSON.parse(localStorage.getItem('debate_session_' + sessionId) || '{}');
     const participantState = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
 
@@ -418,6 +477,58 @@
     let isStreaming = false;
     let currentCondition = state.condition || 'A';
     let completedSessionId = null;
+    let debateActive = false;
+
+    window.addEventListener('beforeunload', e => {
+      if (debateActive && exchanges > 0 && exchanges < REQUIRED_EXCHANGES) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
+    async function fetchWithRetry(url, options, maxRetries = 3) {
+      let delay = 2000;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const resp = await fetch(url, options);
+          if (resp.status === 429 && attempt < maxRetries) {
+            const retryAfter = parseInt(resp.headers.get('retry-after') || 0) * 1000 || delay;
+            // Only show banner if we've tried at least once
+            if (attempt > 0) showNetworkBanner(`AI is busy  - retrying in ${Math.ceil(retryAfter / 1000)}s…`);
+            await new Promise(r => setTimeout(r, Math.min(retryAfter, 30000)));
+            delay = Math.min(delay * 2, 16000);
+            continue;
+          }
+          hideNetworkBanner();
+          return resp;
+        } catch (err) {
+          if (attempt === maxRetries) { hideNetworkBanner(); throw err; }
+          // Be less aggressive with the "Network Error" message
+          if (attempt > 0) showNetworkBanner(`Slight delay  - reconnecting in ${Math.ceil(delay / 1000)}s…`);
+          await new Promise(r => setTimeout(r, delay));
+          delay = Math.min(delay * 2, 16000);
+        }
+      }
+    }
+
+    let networkBanner = null;
+    function showNetworkBanner(msg) {
+      if (!networkBanner) {
+        networkBanner = document.createElement('div');
+        networkBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b45309;color:#fff;text-align:center;padding:0.55rem 1rem;font-size:0.82rem;font-weight:600;letter-spacing:0.03em;';
+        document.body.prepend(networkBanner);
+      }
+      networkBanner.textContent = msg;
+    }
+    function hideNetworkBanner() {
+      if (networkBanner) { networkBanner.remove(); networkBanner = null; }
+    }
+
+    function persistMessages() {
+      state.messages = messages;
+      state.exchanges = exchanges;
+      localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
+    }
 
     // Init UI
     document.getElementById('topicDisplay').textContent = `"${state.topic || 'Unknown topic'}"`;
@@ -518,6 +629,8 @@
       return bubble;
     }
 
+    let _typingTimer = null;
+
     function showTyping() {
       const chatArea = document.getElementById('chatArea');
       const div = document.createElement('div');
@@ -531,15 +644,56 @@
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
-      </div>`;
+      </div>
+      <div class="typing-status" id="typingStatus">Debate Coach is thinking...</div>`;
       div.appendChild(bubble);
+      chatArea.appendChild(div);
+      chatArea.scrollTop = chatArea.scrollHeight;
+
+      _typingTimer = setTimeout(() => {
+        const s = document.getElementById('typingStatus');
+        if (s) s.textContent = 'Analyzing and formulating a counter-point...';
+      }, 12000);
+    }
+
+    function removeTyping() {
+      if (_typingTimer) { clearTimeout(_typingTimer); _typingTimer = null; }
+      const el = document.getElementById('typing-indicator');
+      if (el) el.remove();
+    }
+
+    let _retryCallback = null;
+
+    function showError(message, retryFn) {
+      _retryCallback = retryFn || null;
+      document.getElementById('error-indicator')?.remove();
+      const chatArea = document.getElementById('chatArea');
+      const div = document.createElement('div');
+      div.className = 'error-indicator';
+      div.id = 'error-indicator';
+      div.innerHTML = `
+        <div class="error-bubble">
+          <div class="error-bubble-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Connection Error
+          </div>
+          <div class="error-bubble-sub">${message}</div>
+          ${retryFn ? `<button class="retry-btn" onclick="retryMessage()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Try Again
+          </button>` : ''}
+        </div>`;
       chatArea.appendChild(div);
       chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    function removeTyping() {
-      const el = document.getElementById('typing-indicator');
-      if (el) el.remove();
+    function retryMessage() {
+      document.getElementById('error-indicator')?.remove();
+      if (_retryCallback) {
+        const fn = _retryCallback;
+        _retryCallback = null;
+        fn();
+      }
     }
 
     async function streamToElement(resp, bubble) {
@@ -587,19 +741,16 @@
       localStorage.setItem('dc_participant_state', JSON.stringify(ps));
       document.getElementById('stanceOverlay').classList.remove('visible');
       setStanceDisplay(stance);
-      if (currentCondition === 'A') {
-        sendStanceAsFirstMessage(stance);
-      } else {
-        openDebate(stance);
-      }
+      openDebate(stance);
     }
 
     async function sendStanceAsFirstMessage(stance) {
+      debateActive = true;
       messages.push({ role: 'user', content: stance });
       renderMessage('user', stance);
       showTyping();
       try {
-        const resp = await fetch('/api/chat', {
+        const resp = await fetchWithRetry('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -616,26 +767,31 @@
         const aiText = await streamToElement(resp, bubble);
         document.getElementById('streaming-msg')?.removeAttribute('id');
         document.getElementById('streaming-bubble')?.removeAttribute('id');
-        
+
         const finalAiText = `This is the first of our 5 exchanges for this round.\n\n` + aiText;
         bubble.innerHTML = marked.parse(finalAiText);
-        
+
         messages.push({ role: 'assistant', content: aiText });
-        
-        // In the new flow, the stance is the opener and does NOT count as an exchange.
-        // The user now has 5 full follow-up exchanges ahead of them.
+        persistMessages();
+
+        // Stance opener does NOT count as an exchange.
         document.getElementById('exchangeCount').textContent = '0';
         document.getElementById('chatInput').focus();
       } catch (err) {
         removeTyping();
-        renderMessage('assistant', 'Error: ' + err.message);
+        messages.pop();
+        showError(
+          'Your opening message didn\'t go through  - the AI couldn\'t be reached. Check your connection.',
+          () => sendStanceAsFirstMessage(stance)
+        );
       }
     }
 
     async function openDebate(stance) {
+      debateActive = true;
       showTyping();
       try {
-        const resp = await fetch('/api/chat', {
+        const resp = await fetchWithRetry('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -652,16 +808,26 @@
         const aiText = await streamToElement(resp, bubble);
         document.getElementById('streaming-msg')?.removeAttribute('id');
         document.getElementById('streaming-bubble')?.removeAttribute('id');
-        
+
         const finalAiText = aiText;
         bubble.innerHTML = marked.parse(finalAiText);
 
         messages.push({ role: 'assistant', content: finalAiText });
+        persistMessages();
+        
+        // Add a subtle system notice for the first exchange
+        const notice = document.createElement('div');
+        notice.className = 'system-notice';
+        notice.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Round 1 of 5 Exchanges`;
+        bubble.parentNode.insertBefore(notice, bubble);
         document.getElementById('exchangeCount').textContent = '0';
         document.getElementById('chatInput').focus();
       } catch (err) {
         removeTyping();
-        renderMessage('assistant', 'Error opening debate: ' + err.message);
+        showError(
+          'Couldn\'t start the debate  - the AI didn\'t respond. Check your connection.',
+          () => openDebate(stance)
+        );
       }
     }
 
@@ -686,7 +852,7 @@
       showTyping();
 
       try {
-        const resp = await fetch('/api/chat', {
+        const resp = await fetchWithRetry('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -714,23 +880,78 @@
         } else if (exchanges === 4) {
           finalAiText = aiText + `\n\nThat wraps up our exchanges for this round! Click the button below to continue.`;
         }
-        
+
         bubble.innerHTML = marked.parse(finalAiText);
         console.log(`[VERIFY] Delivered message for Round ${exchanges} (Condition ${currentCondition})`);
 
         messages.push({ role: 'assistant', content: finalAiText });
         exchanges++;
+        persistMessages();
 
         document.getElementById('exchangeCount').textContent = exchanges;
 
         if (exchanges >= REQUIRED_EXCHANGES) {
+          debateActive = false; // allow navigation without warning after completion
           transformInputToButton();
           startBackgroundAnalysis();
         }
 
       } catch (err) {
         removeTyping();
-        renderMessage('assistant', 'Error: ' + err.message);
+        messages.pop(); // remove the unsent user message so retry can re-add it cleanly
+        const savedContent = content;
+        showError(
+          'Your message didn\'t go through  - the AI couldn\'t be reached. Your message is shown above and ready to retry.',
+          async () => {
+            isStreaming = true;
+            document.getElementById('sendBtn').disabled = true;
+            messages.push({ role: 'user', content: savedContent });
+            showTyping();
+            try {
+              const retryResp = await fetchWithRetry('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  messages,
+                  topic: state.topic,
+                  stance: state.stance,
+                  condition: currentCondition,
+                  isFinal: exchanges >= 4
+                })
+              });
+              removeTyping();
+              if (!retryResp.ok) throw new Error('Server error ' + retryResp.status);
+              const bubble = renderMessage('assistant', '', true);
+              const aiText = await streamToElement(retryResp, bubble);
+              document.getElementById('streaming-msg')?.removeAttribute('id');
+              document.getElementById('streaming-bubble')?.removeAttribute('id');
+              let finalAiText = aiText;
+              if (exchanges === 3) {
+                finalAiText = aiText + `\n\nBy the way, after you send your next prompt, the message I send you after will be the end of the exchanges for this round!`;
+              } else if (exchanges === 4) {
+                finalAiText = aiText + `\n\nThat wraps up our exchanges for this round! Click the button below to continue.`;
+              }
+              bubble.innerHTML = marked.parse(finalAiText);
+              messages.push({ role: 'assistant', content: finalAiText });
+              exchanges++;
+              persistMessages();
+              document.getElementById('exchangeCount').textContent = exchanges;
+              if (exchanges >= REQUIRED_EXCHANGES) {
+                debateActive = false;
+                transformInputToButton();
+                startBackgroundAnalysis();
+              }
+            } catch (retryErr) {
+              removeTyping();
+              messages.pop();
+              showError('Still failing  - please check your internet connection and try again.', null);
+            } finally {
+              isStreaming = false;
+              document.getElementById('sendBtn').disabled = false;
+              document.getElementById('chatInput').focus();
+            }
+          }
+        );
       } finally {
         isStreaming = false;
         document.getElementById('sendBtn').disabled = false;
@@ -818,9 +1039,31 @@
       window.location.href = '/post-condition.html?condition=' + currentCondition;
     }
 
-    // Show stance overlay or skip if stance already saved from a prior condition
+    // Restore session if the user refreshed mid-debate (messages already persisted)
     const savedStance = participantState.stance || state.stance;
-    if (savedStance) {
+    if (state.messages && state.messages.length > 0) {
+      messages = [...state.messages];
+      exchanges = typeof state.exchanges === 'number' ? state.exchanges : 0;
+      debateActive = exchanges > 0 && exchanges < REQUIRED_EXCHANGES;
+
+      if (savedStance) setStanceDisplay(savedStance);
+
+      for (const m of messages) {
+        const bubble = renderMessage(m.role, m.content);
+        if (m.role === 'assistant') bubble.innerHTML = marked.parse(m.content);
+      }
+
+      document.getElementById('exchangeCount').textContent = exchanges;
+
+      if (exchanges >= REQUIRED_EXCHANGES) {
+        debateActive = false;
+        transformInputToButton();
+        startBackgroundAnalysis();
+      } else {
+        document.getElementById('chatInput').focus();
+      }
+    } else if (savedStance) {
+      // Normal flow: stance already known from a prior condition
       state.stance = savedStance;
       localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
       setStanceDisplay(savedStance);

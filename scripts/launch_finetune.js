@@ -11,7 +11,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const JSONL_FILE = join(__dirname, '..', 'data', 'finetune_data.jsonl');
+const JSONL_FILE = join(__dirname, '..', 'data', 'final_finetune.jsonl');
 
 if (!existsSync(JSONL_FILE)) {
   console.error('finetune_data.jsonl not found. Run prepare_finetune.js first.');
@@ -39,7 +39,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const job = await openai.fineTuning.jobs.create({
       training_file: file.id,
       model: 'gpt-4o-mini-2024-07-18',
-      suffix: 'debate-coach-v1',
+      suffix: 'debate-coach-v2',
       hyperparameters: { n_epochs: 3 }
     });
 

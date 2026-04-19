@@ -238,7 +238,7 @@
     const roundNum = order.indexOf(condition) + 1;
 
     // Update round badge and progress label
-    document.getElementById('roundBadge').textContent = 'Post-Round Survey — Round ' + (roundNum > 0 ? roundNum : 1);
+    document.getElementById('roundBadge').textContent = 'Post-Round Survey  - Round ' + (roundNum > 0 ? roundNum : 1);
     document.getElementById('progressLabel').textContent = 'Round ' + (roundNum > 0 ? roundNum : 1) + ' of 3';
 
     // Build progress dots
@@ -314,33 +314,42 @@
 
       const cData = (freshPs.conditionData || {})[condition];
       if (cData && freshPs.participantId) {
-        try {
-          await fetch('/api/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              participantId: freshPs.participantId,
-              topic: freshPs.topic,
-              condition,
-              conditionOrder: freshPs.conditionOrder || order,
-              messages: cData.messages || [],
-              postConditionSurvey: { ...survey },
-              judgeScores: cData.judgeScores || null,
-              argQualityMetrics: cData.argQualityMetrics || null,
-              startedAt: cData.startedAt,
-              endedAt: cData.endedAt
-            })
-          });
-        } catch (err) {
-          console.error('Error saving:', err);
+        const payload = JSON.stringify({
+          participantId: freshPs.participantId,
+          topic: freshPs.topic,
+          condition,
+          conditionOrder: freshPs.conditionOrder || order,
+          messages: cData.messages || [],
+          postConditionSurvey: { ...survey },
+          judgeScores: cData.judgeScores || null,
+          argQualityMetrics: cData.argQualityMetrics || null,
+          startedAt: cData.startedAt,
+          endedAt: cData.endedAt
+        });
+        // Retry up to 4 times with exponential backoff before giving up
+        let saved = false;
+        for (let attempt = 0; attempt < 4; attempt++) {
+          try {
+            const resp = await fetch('/api/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+            if (resp.ok) { saved = true; break; }
+            if (resp.status === 429) {
+              const retryAfter = parseInt(resp.headers.get('retry-after') || 0) * 1000 || 2000 * Math.pow(2, attempt);
+              await new Promise(r => setTimeout(r, Math.min(retryAfter, 30000)));
+            } else if (attempt < 3) {
+              await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+            }
+          } catch (err) {
+            if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+          }
         }
+        if (!saved) console.error('Session save failed after retries  - data preserved in localStorage');
       }
 
       const currentIdx = order.indexOf(condition);
       const nextCondition = order[currentIdx + 1];
 
       if (nextCondition) {
-        const sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        const sessionId = crypto.randomUUID();
         const state = {
           sessionId, participantId: freshPs.participantId, topic: freshPs.topic,
           condition: nextCondition, startedAt: new Date().toISOString()

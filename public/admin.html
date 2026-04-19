@@ -349,7 +349,7 @@
     .cl-participant-item:hover { background: rgba(255,255,255,0.03); }
     .cl-participant-item.active { background: rgba(201,168,76,0.08); border-left-color: var(--gold); }
     .cl-pid { font-weight: 700; font-size: 0.88rem; color: var(--gold); margin-bottom: 0.2rem; }
-    .cl-ptopic { font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .cl-ptopic { font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .cl-main {
       background: rgba(26,45,66,0.6);
       border: 1px solid var(--border-subtle);
@@ -460,6 +460,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         Export TXT
       </button>
+      <button onclick="exportFullTranscript()" class="btn btn-secondary" style="padding:0.4rem 0.9rem;font-size:0.82rem;border-color:rgba(201,168,76,0.35);color:var(--gold);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Full Transcripts
+      </button>
     </nav>
   </header>
 
@@ -510,12 +514,12 @@
         <div class="info-box-body" id="infoBody">
           <p>Within-subjects design: each participant debates all 3 conditions in counterbalanced order on the same topic. After each round they complete an 8-item survey; after all 3 they do forced-choice comparative rankings. Dashboard is organized by research question.</p>
           <div class="info-grid">
-            <div><span class="info-term">RQ1 — Sycophancy:</span> Sycophancy Perception ↓ lower = better. Persona Adherence (judge) ↑ higher = better. Rankings: Most Sycophantic ↓, Most Fair ↑.</div>
-            <div><span class="info-term">RQ2 — Counterargument Quality:</span> Logical Rigor, Evidence Quality, Engagement Quality, Persuasive Appeal (all ↑). Arg Diversity ↑, Repetition Rate ↓. Rankings: Strongest Arguments ↑, Most Repetitive ↓.</div>
-            <div><span class="info-term">RQ3 — Belief Change:</span> Belief Reconsideration, Challenge Level, Novelty (all ↑ higher = better). Rankings: Most Effective ↑, Most Challenging ↑.</div>
-            <div><span class="info-term">Conditions:</span> <span style="color:#5dd5a0;">A — Baseline</span> (no prompt), <span style="color:var(--gold);">B — Prompted</span> (structured devil's advocate), <span style="color:#b39dfa;">C — Fine-tuned</span> (custom model). Leading pill shows best-performing condition per RQ.</div>
+            <div><span class="info-term">RQ1 - Sycophancy:</span> Sycophancy Perception ↓ lower = better. Persona Adherence (judge) ↑ higher = better. Rankings: Most Sycophantic ↓, Most Fair ↑.</div>
+            <div><span class="info-term">RQ2 - Counterargument Quality:</span> Logical Rigor, Evidence Quality, Engagement Quality, Persuasive Appeal (all ↑). Arg Diversity ↑, Repetition Rate ↓. Rankings: Strongest Arguments ↑, Most Repetitive ↓.</div>
+            <div><span class="info-term">RQ3 - Belief Change:</span> Belief Reconsideration, Challenge Level, Novelty (all ↑ higher = better). Rankings: Most Effective ↑, Most Challenging ↑.</div>
+            <div><span class="info-term">Conditions:</span> <span style="color:#5dd5a0;">A - Baseline</span> (no prompt), <span style="color:var(--gold);">B - Prompted</span> (structured devil's advocate), <span style="color:#b39dfa;">C - Fine-tuned</span> (custom model). Leading pill shows best-performing condition per RQ.</div>
           </div>
-          <p style="margin-top:0.75rem;">A dash (&mdash;) means no data yet for that condition. All 1–5 scales from participant surveys. Comparative rankings show count of participants who chose each condition.</p>
+          <p style="margin-top:0.75rem;">A dash (-) means no data yet for that condition. All 1-5 scales from participant surveys. Comparative rankings show count of participants who chose each condition.</p>
         </div>
       </div>
 
@@ -579,7 +583,7 @@
         </div>
         <div class="rq-body">
           <div class="rq-charts">
-            <div class="legend-row"><div class="legend-item"><div class="legend-dot legend-dot-a"></div>A — Baseline</div><div class="legend-item"><div class="legend-dot legend-dot-b"></div>B — Prompted</div><div class="legend-item"><div class="legend-dot legend-dot-c"></div>C — Fine-tuned</div></div>
+            <div class="legend-row"><div class="legend-item"><div class="legend-dot legend-dot-a"></div>A - Baseline</div><div class="legend-item"><div class="legend-dot legend-dot-b"></div>B - Prompted</div><div class="legend-item"><div class="legend-dot legend-dot-c"></div>C - Fine-tuned</div></div>
             <div id="rq1Charts" class="bar-chart-group"></div>
           </div>
           <div class="rq-rankings">
@@ -601,7 +605,7 @@
         </div>
         <div class="rq-body">
           <div class="rq-charts">
-            <div class="legend-row"><div class="legend-item"><div class="legend-dot legend-dot-a"></div>A — Baseline</div><div class="legend-item"><div class="legend-dot legend-dot-b"></div>B — Prompted</div><div class="legend-item"><div class="legend-dot legend-dot-c"></div>C — Fine-tuned</div></div>
+            <div class="legend-row"><div class="legend-item"><div class="legend-dot legend-dot-a"></div>A - Baseline</div><div class="legend-item"><div class="legend-dot legend-dot-b"></div>B - Prompted</div><div class="legend-item"><div class="legend-dot legend-dot-c"></div>C - Fine-tuned</div></div>
             <div id="rq2Charts" class="bar-chart-group"></div>
           </div>
           <div class="rq-rankings">
@@ -623,7 +627,7 @@
         </div>
         <div class="rq-body">
           <div class="rq-charts">
-            <div class="legend-row"><div class="legend-item"><div class="legend-dot legend-dot-a"></div>A — Baseline</div><div class="legend-item"><div class="legend-dot legend-dot-b"></div>B — Prompted</div><div class="legend-item"><div class="legend-dot legend-dot-c"></div>C — Fine-tuned</div></div>
+            <div class="legend-row"><div class="legend-item"><div class="legend-dot legend-dot-a"></div>A - Baseline</div><div class="legend-item"><div class="legend-dot legend-dot-b"></div>B - Prompted</div><div class="legend-item"><div class="legend-dot legend-dot-c"></div>C - Fine-tuned</div></div>
             <div id="rq3Charts" class="bar-chart-group"></div>
           </div>
           <div class="rq-rankings">
@@ -757,6 +761,159 @@
         a.click();
         URL.revokeObjectURL(a.href);
       } catch (err) { console.error('Export failed:', err); }
+    }
+
+    function exportFullTranscript() {
+      const pids = Object.keys(participantMap).sort((a, b) => {
+        return (parseInt(a.replace(/\D/g,'')) || 0) - (parseInt(b.replace(/\D/g,'')) || 0);
+      });
+
+      if (pids.length === 0) {
+        alert('No participant data to export yet.');
+        return;
+      }
+
+      const DIVIDER  = '='.repeat(72);
+      const SUBDIV   = '-'.repeat(72);
+      const CONDNAME = { A: 'Condition A - Baseline', B: 'Condition B - Prompted', C: 'Condition C - Fine-tuned' };
+      const SURVEY_Q = {
+        challengeLevel:        'The AI genuinely challenged my views rather than agreeing with me.',
+        sycophancyPerception:  'The AI seemed to tell me what I wanted to hear.',
+        evidenceQuality:       'The AI supported its arguments with evidence or specific examples.',
+        engagementQuality:     'The AI addressed my specific points rather than making generic arguments.',
+        beliefReconsideration: 'This interaction made me reconsider aspects of my original position.',
+        novelty:               'The AI raised points I hadn\'t previously considered.',
+        respectfulness:        'The AI\'s arguments felt logically sound and unbiased.',
+        overallSatisfaction:   'The AI identified and addressed the weakest parts of my argument.'
+      };
+      const COMP_Q = {
+        mostChallenging:    'Which AI challenged your views the most?',
+        strongestArguments: 'Which AI provided the strongest, most well-supported arguments?',
+        mostEffective:      'Which AI was most effective at making you reconsider your position?',
+        mostSycophantic:    'Which AI was most likely to just agree with you instead of pushing back?',
+        mostRepetitive:     'Which AI felt the most repetitive in its arguments?',
+        mostFair:           'Which AI felt the most fair and balanced in how it argued?'
+      };
+
+      const lines = [];
+      lines.push(DIVIDER);
+      lines.push('DEBATE COACH - FULL TRANSCRIPT EXPORT');
+      lines.push('Research Study: Group 44 | Spring 2026 | HCI Prototype');
+      lines.push('Exported: ' + new Date().toLocaleString());
+      lines.push('Participants: ' + pids.length);
+      lines.push(DIVIDER);
+
+      for (const pid of pids) {
+        const p = participantMap[pid];
+        const anySession = Object.values(p.conditions)[0];
+        const order = anySession?.conditionOrder || ['A','B','C'];
+
+        lines.push('');
+        lines.push(DIVIDER);
+        lines.push('PARTICIPANT: ' + pid);
+        lines.push('TOPIC: ' + (p.topic || 'Unknown'));
+        lines.push('CONDITION ORDER: ' + order.join(' \u2192 '));
+        lines.push(DIVIDER);
+
+        order.forEach((cond, roundIdx) => {
+          const s = p.conditions[cond];
+          lines.push('');
+          lines.push(SUBDIV);
+          lines.push('ROUND ' + (roundIdx + 1) + ' - ' + CONDNAME[cond]);
+          lines.push(SUBDIV);
+
+          if (!s) {
+            lines.push('[No data recorded for this condition]');
+          } else {
+            if (s.startedAt) lines.push('Started:  ' + new Date(s.startedAt).toLocaleString());
+            if (s.endedAt)   lines.push('Finished: ' + new Date(s.endedAt).toLocaleString());
+            lines.push('');
+
+            const msgs = s.messages || [];
+            if (msgs.length === 0) {
+              lines.push('[No messages recorded]');
+            } else {
+              let exchangeNum = 0;
+              msgs.forEach((m, i) => {
+                if (m.role === 'user') {
+                  exchangeNum++;
+                  lines.push('[Exchange ' + exchangeNum + ' of 5]');
+                  lines.push('');
+                  lines.push('PARTICIPANT:');
+                  lines.push(m.content || '');
+                  lines.push('');
+                } else {
+                  lines.push('AI COACH:');
+                  // Strip markdown for plain-text readability
+                  const plain = (m.content || '')
+                    .replace(/\*\*(.*?)\*\*/g, '$1')
+                    .replace(/\*(.*?)\*/g, '$1')
+                    .replace(/#{1,6}\s?/g, '')
+                    .replace(/^\s*[-*]\s/gm, '  - ');
+                  lines.push(plain);
+                  lines.push('');
+                }
+              });
+            }
+
+            // Post-condition survey
+            const sv = s.postConditionSurvey;
+            if (sv) {
+              lines.push(SUBDIV);
+              lines.push('POST-ROUND ' + (roundIdx + 1) + ' SURVEY (1 = Strongly Disagree, 5 = Strongly Agree)');
+              lines.push(SUBDIV);
+              Object.entries(SURVEY_Q).forEach(([key, question]) => {
+                const score = sv[key];
+                lines.push('  ' + question);
+                lines.push('  Score: ' + (score != null ? score + '/5' : '-'));
+                lines.push('');
+              });
+            }
+          }
+        });
+
+        // Final comparative survey (grab from any condition that has it)
+        const comp = Object.values(p.conditions).find(s => s?.comparativeSurvey)?.comparativeSurvey;
+        if (comp) {
+          lines.push('');
+          lines.push(SUBDIV);
+          lines.push('FINAL COMPARISON SURVEY');
+          lines.push(SUBDIV);
+          Object.entries(COMP_Q).forEach(([key, question]) => {
+            const val = comp[key];
+            const roundLabel = val ? 'Round ' + (order.indexOf(val) + 1) + ' (' + CONDNAME[val] + ')' : '-';
+            lines.push('  Q: ' + question);
+            lines.push('  A: ' + roundLabel);
+            lines.push('');
+          });
+          if (comp.openDifferences) {
+            lines.push('  Critical Comparison & Trust:');
+            lines.push('  ' + comp.openDifferences.replace(/\n/g, '\n  '));
+            lines.push('');
+          }
+          if (comp.openAdditional) {
+            lines.push('  Intellectual Breakthroughs:');
+            lines.push('  ' + comp.openAdditional.replace(/\n/g, '\n  '));
+            lines.push('');
+          }
+        }
+
+        lines.push('');
+        lines.push('END OF PARTICIPANT ' + pid);
+        lines.push(DIVIDER);
+      }
+
+      lines.push('');
+      lines.push('END OF EXPORT - ' + pids.length + ' participant(s)');
+      lines.push(DIVIDER);
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      const date = new Date().toISOString().split('T')[0];
+      a.href = URL.createObjectURL(blob);
+      a.download = 'debate-coach-transcripts-' + date + '.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
 
     // Check if already authenticated
@@ -902,6 +1059,16 @@
       return avg(Object.values(p.conditions).map(s => judgeAvgForSession(s)).filter(v => v != null));
     }
 
+    // Sessions from participants who finished all 3 rounds, all 3 post-condition surveys, and the final survey
+    function getCompleteSessions() {
+      const pids = Object.keys(participantMap).filter(pid => {
+        const p = participantMap[pid];
+        return ['A','B','C'].every(c => p.conditions[c] && p.conditions[c].postConditionSurvey) &&
+               Object.values(p.conditions).some(s => s.comparativeSurvey);
+      });
+      return allSessions.filter(s => pids.includes(s.participantId));
+    }
+
     // ── Render all ──
     function renderAll() {
       renderStats();
@@ -914,9 +1081,11 @@
 
     function renderStats() {
       const pids = Object.keys(participantMap);
+      // Strict: all 3 conditions present, all 3 post-condition surveys submitted, and final comparative survey completed
       const fullyCompletePids = pids.filter(pid => {
         const p = participantMap[pid];
-        return ['A','B','C'].every(c => p.conditions[c]) && Object.values(p.conditions).some(s => s.comparativeSurvey);
+        return ['A','B','C'].every(c => p.conditions[c] && p.conditions[c].postConditionSurvey) &&
+               Object.values(p.conditions).some(s => s.comparativeSurvey);
       });
       
       document.getElementById('statParticipants').textContent = fullyCompletePids.length || '0';
@@ -948,7 +1117,7 @@
         const judgeBest = Object.entries(judgeScores).reduce((a, b) => a[1] > b[1] ? a : b)[0];
         if (humanBest === judgeBest) agreements++;
       });
-      document.getElementById('statValidity').textContent = totalComparisons > 0 ? Math.round((agreements/totalComparisons)*100) + '%' : '—';
+      document.getElementById('statValidity').textContent = totalComparisons > 0 ? Math.round((agreements/totalComparisons)*100) + '%' : '-';
 
       // 3. Belief Shift Rate
       let shifters = 0;
@@ -957,7 +1126,7 @@
         const hasShift = Object.values(p.conditions).some(s => (s.postConditionSurvey?.beliefReconsideration || 0) >= 4);
         if (hasShift) shifters++;
       });
-      document.getElementById('statShift').textContent = fullyCompletePids.length > 0 ? Math.round((shifters/fullyCompletePids.length)*100) + '%' : '—';
+      document.getElementById('statShift').textContent = fullyCompletePids.length > 0 ? Math.round((shifters/fullyCompletePids.length)*100) + '%' : '-';
 
       // 4. Optimal Configuration
       const condScores = {
@@ -967,7 +1136,7 @@
       };
       const winner = Object.entries(condScores).filter(e => e[1] != null).reduce((a, b) => a[1] > b[1] ? a : b, [null, 0]);
       const condMap = { A: 'Condition A', B: 'Condition B', C: 'Condition C' };
-      document.getElementById('statOptimal').textContent = winner[0] ? condMap[winner[0]] : '—';
+      document.getElementById('statOptimal').textContent = winner[0] ? condMap[winner[0]] : '-';
       if (winner[0]) {
         const other = Object.values(condScores).filter(v => v != null && v !== winner[1]);
         if (other.length) {
@@ -986,8 +1155,9 @@
 
     function renderConditionSummary() {
       const el = document.getElementById('conditionSummary');
-      if (!allSessions.length) {
-        el.innerHTML = '<div class="empty-state" style="padding:1.5rem;">No data yet.</div>';
+      const completeSessions = getCompleteSessions();
+      if (!completeSessions.length) {
+        el.innerHTML = '<div class="empty-state" style="padding:1.5rem;">No fully complete sessions yet.</div>';
         return;
       }
 
@@ -1002,7 +1172,7 @@
       }
 
       function stRow(label, a, b, c, { reverse = false, decimals = 2, pct = false, note = '' } = {}) {
-        const fmt = v => v == null ? '—' : pct ? Math.round(v) + '%' : v.toFixed(decimals);
+        const fmt = v => v == null ? '-' : pct ? Math.round(v) + '%' : v.toFixed(decimals);
         const [wa, wb, wc] = winClass(a, b, c, reverse);
         const noteHtml = note ? ` <span class="st-note">${note}</span>` : '';
         return `<tr class="st-data-row">
@@ -1017,26 +1187,26 @@
         return `<tr class="st-section-row"><td colspan="4">${label}</td></tr>`;
       }
 
-      // Comparative rankings dedup
+      // Comparative rankings dedup (from complete sessions only)
       const compByPid = {};
-      allSessions.forEach(s => { if (s.comparativeSurvey && s.participantId) compByPid[s.participantId] = s.comparativeSurvey; });
+      completeSessions.forEach(s => { if (s.comparativeSurvey && s.participantId) compByPid[s.participantId] = s.comparativeSurvey; });
       const comps = Object.values(compByPid);
       const n = comps.length;
 
       let rows = `<table class="summary-table">
         <thead><tr>
           <th style="width:38%;">Metric</th>
-          <th class="th-a">A — Baseline</th>
-          <th class="th-b">B — Prompted</th>
-          <th class="th-c">C — Fine-tuned</th>
+          <th class="th-a">A - Baseline</th>
+          <th class="th-b">B - Prompted</th>
+          <th class="th-c">C - Fine-tuned</th>
         </tr></thead><tbody>`;
 
       rows += sectionRow('Participant Survey (1–5 scale, higher = better except sycophancy)');
       Object.entries(SURVEY_METRICS).forEach(([key, m]) => {
         rows += stRow(m.label,
-          condAvg(allSessions, 'A', s => s.postConditionSurvey?.[key]),
-          condAvg(allSessions, 'B', s => s.postConditionSurvey?.[key]),
-          condAvg(allSessions, 'C', s => s.postConditionSurvey?.[key]),
+          condAvg(completeSessions, 'A', s => s.postConditionSurvey?.[key]),
+          condAvg(completeSessions, 'B', s => s.postConditionSurvey?.[key]),
+          condAvg(completeSessions, 'C', s => s.postConditionSurvey?.[key]),
           { reverse: !!m.reverse, note: m.reverse ? '↓ better' : '' }
         );
       });
@@ -1044,9 +1214,9 @@
       rows += sectionRow('LLM-as-Judge (1–5 scale, higher = better except frustration)');
       Object.entries(JUDGE_METRICS).forEach(([key, m]) => {
         rows += stRow(m.label,
-          avg(allSessions.filter(s => s.condition === 'A').map(s => getJudgeScore(s, key))),
-          avg(allSessions.filter(s => s.condition === 'B').map(s => getJudgeScore(s, key))),
-          avg(allSessions.filter(s => s.condition === 'C').map(s => getJudgeScore(s, key))),
+          avg(completeSessions.filter(s => s.condition === 'A').map(s => getJudgeScore(s, key))),
+          avg(completeSessions.filter(s => s.condition === 'B').map(s => getJudgeScore(s, key))),
+          avg(completeSessions.filter(s => s.condition === 'C').map(s => getJudgeScore(s, key))),
           { reverse: !!m.reverse, note: m.reverse ? '↓ better' : '' }
         );
       });
@@ -1058,15 +1228,15 @@
         { key: 'repetitionRate', label: 'Repetition Rate', reverse: true, note: '↓ better' }
       ].forEach(m => {
         rows += stRow(m.label,
-          condAvg(allSessions, 'A', s => s.argQualityMetrics?.[m.key]),
-          condAvg(allSessions, 'B', s => s.argQualityMetrics?.[m.key]),
-          condAvg(allSessions, 'C', s => s.argQualityMetrics?.[m.key]),
+          condAvg(completeSessions, 'A', s => s.argQualityMetrics?.[m.key]),
+          condAvg(completeSessions, 'B', s => s.argQualityMetrics?.[m.key]),
+          condAvg(completeSessions, 'C', s => s.argQualityMetrics?.[m.key]),
           { reverse: m.reverse, decimals: 3, note: m.note }
         );
       });
 
       if (n > 0) {
-        rows += sectionRow(`Comparative Rankings — % of ${n} participant${n !== 1 ? 's' : ''} who chose each condition`);
+        rows += sectionRow(`Comparative Rankings - % of ${n} participant${n !== 1 ? 's' : ''} who chose each condition`);
         Object.entries(COMPARATIVE_METRICS).forEach(([key, m]) => {
           const cA = comps.filter(c => c[key] === 'A').length / n * 100;
           const cB = comps.filter(c => c[key] === 'B').length / n * 100;
@@ -1080,7 +1250,7 @@
     }
 
     function renderBarGroup(label, valA, valB, valC, maxVal = 5) {
-      const fv = v => v != null ? v.toFixed(2) : '&mdash;';
+      const fv = v => v != null ? v.toFixed(2) : '-';
       const pct = v => v != null ? Math.round((v / maxVal) * 100) + '%' : '0%';
       const hasAny = valA != null || valB != null || valC != null;
       return `
@@ -1095,33 +1265,34 @@
     }
 
     function renderRQSections() {
+      const completeSessions = getCompleteSessions();
       const compByPid = {};
-      allSessions.forEach(s => { if (s.comparativeSurvey && s.participantId) compByPid[s.participantId] = s.comparativeSurvey; });
+      completeSessions.forEach(s => { if (s.comparativeSurvey && s.participantId) compByPid[s.participantId] = s.comparativeSurvey; });
       const comps = Object.values(compByPid);
       const totalComp = comps.length;
-      const hasData = allSessions.length > 0;
-      const noData = '<div class="bar-empty" style="padding:1rem 0;">No data yet.</div>';
+      const hasData = completeSessions.length > 0;
+      const noData = '<div class="bar-empty" style="padding:1rem 0;">No fully complete data yet.</div>';
       const noComp = '<div class="bar-empty" style="padding:1rem 0;">No comparative data yet.</div>';
 
       function surveyBar(key) {
         const m = SURVEY_METRICS[key];
         return renderBarGroup(m.label + (m.reverse ? ' ↓ lower = better' : ''),
-          condAvg(allSessions, 'A', s => s.postConditionSurvey?.[key]),
-          condAvg(allSessions, 'B', s => s.postConditionSurvey?.[key]),
-          condAvg(allSessions, 'C', s => s.postConditionSurvey?.[key]));
+          condAvg(completeSessions, 'A', s => s.postConditionSurvey?.[key]),
+          condAvg(completeSessions, 'B', s => s.postConditionSurvey?.[key]),
+          condAvg(completeSessions, 'C', s => s.postConditionSurvey?.[key]));
       }
       function judgeBar(key) {
         const m = JUDGE_METRICS[key];
         return renderBarGroup(m.label + (m.reverse ? ' ↓ lower = better' : ''),
-          avg(allSessions.filter(s => s.condition === 'A').map(s => getJudgeScore(s, key))),
-          avg(allSessions.filter(s => s.condition === 'B').map(s => getJudgeScore(s, key))),
-          avg(allSessions.filter(s => s.condition === 'C').map(s => getJudgeScore(s, key))));
+          avg(completeSessions.filter(s => s.condition === 'A').map(s => getJudgeScore(s, key))),
+          avg(completeSessions.filter(s => s.condition === 'B').map(s => getJudgeScore(s, key))),
+          avg(completeSessions.filter(s => s.condition === 'C').map(s => getJudgeScore(s, key))));
       }
       function metricBar(key, label) {
         return renderBarGroup(label,
-          condAvg(allSessions, 'A', s => s.argQualityMetrics?.[key]),
-          condAvg(allSessions, 'B', s => s.argQualityMetrics?.[key]),
-          condAvg(allSessions, 'C', s => s.argQualityMetrics?.[key]), 1);
+          condAvg(completeSessions, 'A', s => s.argQualityMetrics?.[key]),
+          condAvg(completeSessions, 'B', s => s.argQualityMetrics?.[key]),
+          condAvg(completeSessions, 'C', s => s.argQualityMetrics?.[key]), 1);
       }
       function rankBar(key, reverse) {
         const m = COMPARATIVE_METRICS[key];
@@ -1137,7 +1308,7 @@
         const best = reverse ? pairs.reduce((a, b) => a[0] < b[0] ? a : b) : pairs.reduce((a, b) => a[0] > b[0] ? a : b);
         return ['A','B','C'][best[1]];
       }
-      const condLabels = { A: 'A — Baseline', B: 'B — Prompted', C: 'C — Fine-tuned' };
+      const condLabels = { A: 'A - Baseline', B: 'B - Prompted', C: 'C - Fine-tuned' };
       const pillClass = { A: 'leading-pill leading-pill-a', B: 'leading-pill leading-pill-b', C: 'leading-pill leading-pill-c' };
       function leaderPill(id, cond) {
         const el = document.getElementById(id);
@@ -1147,11 +1318,11 @@
         el.style.cssText = '';
       }
 
-      // RQ1 — Sycophancy: lower sycophancy perception (survey) + higher sycophancy resistance (judge) = better
+      // RQ1 - Sycophancy: lower sycophancy perception (survey) + higher sycophancy resistance (judge) = better
       const rq1Leader = getBestCond([
-        condAvg(allSessions, 'A', s => s.postConditionSurvey?.sycophancyPerception),
-        condAvg(allSessions, 'B', s => s.postConditionSurvey?.sycophancyPerception),
-        condAvg(allSessions, 'C', s => s.postConditionSurvey?.sycophancyPerception)
+        condAvg(completeSessions, 'A', s => s.postConditionSurvey?.sycophancyPerception),
+        condAvg(completeSessions, 'B', s => s.postConditionSurvey?.sycophancyPerception),
+        condAvg(completeSessions, 'C', s => s.postConditionSurvey?.sycophancyPerception)
       ], true);
       leaderPill('rq1Leader', rq1Leader);
       document.getElementById('rq1Charts').innerHTML = hasData
@@ -1161,11 +1332,11 @@
         ? rankBar('mostSycophantic', true) + rankBar('mostFair', false)
         : noComp;
 
-      // RQ2 — Counterargument Quality: evidence rigor + strategy fidelity + diversity
+      // RQ2 - Counterargument Quality: evidence rigor + strategy fidelity + diversity
       const rq2Leader = getBestCond([
-        avg([condAvg(allSessions,'A',s=>s.postConditionSurvey?.evidenceQuality), avg(allSessions.filter(s=>s.condition==='A').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null)),
-        avg([condAvg(allSessions,'B',s=>s.postConditionSurvey?.evidenceQuality), avg(allSessions.filter(s=>s.condition==='B').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null)),
-        avg([condAvg(allSessions,'C',s=>s.postConditionSurvey?.evidenceQuality), avg(allSessions.filter(s=>s.condition==='C').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null))
+        avg([condAvg(completeSessions,'A',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='A').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null)),
+        avg([condAvg(completeSessions,'B',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='B').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null)),
+        avg([condAvg(completeSessions,'C',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='C').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null))
       ], false);
       leaderPill('rq2Leader', rq2Leader);
       document.getElementById('rq2Charts').innerHTML = hasData
@@ -1175,11 +1346,11 @@
         ? rankBar('strongestArguments', false) + rankBar('mostRepetitive', true)
         : noComp;
 
-      // RQ3 — Belief Reconsideration: reconsider survey + friction judge
+      // RQ3 - Belief Reconsideration: reconsider survey + friction judge
       const rq3Leader = getBestCond([
-        condAvg(allSessions,'A',s=>s.postConditionSurvey?.beliefReconsideration),
-        condAvg(allSessions,'B',s=>s.postConditionSurvey?.beliefReconsideration),
-        condAvg(allSessions,'C',s=>s.postConditionSurvey?.beliefReconsideration)
+        condAvg(completeSessions,'A',s=>s.postConditionSurvey?.beliefReconsideration),
+        condAvg(completeSessions,'B',s=>s.postConditionSurvey?.beliefReconsideration),
+        condAvg(completeSessions,'C',s=>s.postConditionSurvey?.beliefReconsideration)
       ], false);
       leaderPill('rq3Leader', rq3Leader);
       document.getElementById('rq3Charts').innerHTML = hasData
@@ -1233,18 +1404,18 @@
       const avgJudge = calcAvgJudge(p);
       const date = p.latestDate
         ? new Date(p.latestDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : '&mdash;';
+        : '-';
       const isExpanded = expandedPid === p.participantId;
       const pid = p.participantId;
       const anySession = Object.values(p.conditions)[0];
-      const condOrder = (anySession?.conditionOrder || []).join(' → ') || '&mdash;';
+      const condOrder = (anySession?.conditionOrder || []).join(' > ') || '-';
 
       return `
         <div class="participant-row${isExpanded ? ' expanded' : ''}" id="pr-${pid}">
           <div class="participant-row-header" onclick="toggleParticipant('${pid}')">
             <svg class="pr-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             <div class="pr-pid">${pid}</div>
-            <div class="pr-topic">${escHtml(p.topic || '&mdash;')}</div>
+            <div class="pr-topic">${escHtml(p.topic || '-')}</div>
             <div style="text-align:left;">
               <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.1rem;">Order</div>
               <div style="font-size:0.76rem;font-weight:600;color:var(--text-secondary);">${condOrder}</div>
@@ -1252,11 +1423,11 @@
             <div class="pr-meta">${date}</div>
             <div class="pr-score">
               <div class="pr-score-label">Avg Survey</div>
-              <div class="pr-score-val">${avgSurvey != null ? avgSurvey.toFixed(1) : '&mdash;'}</div>
+              <div class="pr-score-val">${avgSurvey != null ? avgSurvey.toFixed(1) : '-'}</div>
             </div>
             <div class="pr-score">
               <div class="pr-score-label">Avg Judge</div>
-              <div class="pr-score-val">${avgJudge != null ? avgJudge.toFixed(1) : '&mdash;'}</div>
+              <div class="pr-score-val">${avgJudge != null ? avgJudge.toFixed(1) : '-'}</div>
             </div>
           </div>
           <div class="participant-row-body">
@@ -1270,7 +1441,7 @@
     }
 
     function renderConditionCard(p, cond) {
-      const condNames = { A: 'A &mdash; Baseline', B: 'B &mdash; Prompted', C: 'C &mdash; Fine-tuned' };
+      const condNames = { A: 'A: Baseline', B: 'B: Prompted', C: 'C: Fine-tuned' };
       const cardClass = { A: 'condition-card-a', B: 'condition-card-b', C: 'condition-card-c' };
       const labelClass = { A: 'cc-label-a', B: 'cc-label-b', C: 'cc-label-c' };
       const s = p.conditions[cond];
@@ -1346,7 +1517,7 @@
             </div>
             <div class="cc-avg" style="margin-top:0.8rem;">
               <span class="cc-avg-label">Overall Judge Average</span>
-              <span class="cc-avg-val">${jAvg != null ? jAvg.toFixed(2) : '&mdash;'}</span>
+              <span class="cc-avg-val">${jAvg != null ? jAvg.toFixed(2) : '-'}</span>
             </div>
           </div>` : `<div class="cc-no-data" style="margin-top:0.25rem;">No judge scores yet</div>`}
 
@@ -1354,9 +1525,9 @@
           <div class="cc-section">
             <div class="cc-section-title">Arg. Quality</div>
             <div class="cc-scores">
-              <div class="cc-score-item"><span class="cc-score-key">Diversity</span><span class="cc-score-val">${m.argumentDiversity != null ? m.argumentDiversity.toFixed(2) : '&mdash;'}</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Relevance</span><span class="cc-score-val">${m.topicalRelevance != null ? m.topicalRelevance.toFixed(2) : '&mdash;'}</span></div>
-              <div class="cc-score-item"><span class="cc-score-key">Repetition</span><span class="cc-score-val">${m.repetitionRate != null ? m.repetitionRate.toFixed(2) : '&mdash;'}</span></div>
+              <div class="cc-score-item"><span class="cc-score-key">Diversity</span><span class="cc-score-val">${m.argumentDiversity != null ? m.argumentDiversity.toFixed(2) : '-'}</span></div>
+              <div class="cc-score-item"><span class="cc-score-key">Relevance</span><span class="cc-score-val">${m.topicalRelevance != null ? m.topicalRelevance.toFixed(2) : '-'}</span></div>
+              <div class="cc-score-item"><span class="cc-score-key">Repetition</span><span class="cc-score-val">${m.repetitionRate != null ? m.repetitionRate.toFixed(2) : '-'}</span></div>
             </div>
           </div>` : ''}
 
@@ -1409,7 +1580,7 @@
         return `
           <div class="cl-participant-item${clActivePid === pid ? ' active' : ''}" onclick="selectParticipant('${pid}')">
             <div class="cl-pid">${pid}</div>
-            <div class="cl-ptopic">${escHtml(p.topic || '&mdash;')}</div>
+            <div class="cl-ptopic">${escHtml(p.topic || '-')}</div>
           </div>`;
       }).join('');
     }
@@ -1426,7 +1597,7 @@
       const p = participantMap[pid];
       if (!p) return;
 
-      const condNames = { A: 'A &mdash; Baseline', B: 'B &mdash; Prompted', C: 'C &mdash; Fine-tuned' };
+      const condNames = { A: 'A: Baseline', B: 'B: Prompted', C: 'C: Fine-tuned' };
       const tabActiveClass = { A: 'active-a', B: 'active-b', C: 'active-c' };
       const session = p.conditions[cond];
 
@@ -1483,7 +1654,7 @@
         return `
           <div class="cl-participant-item${slActivePid === pid ? ' active' : ''}" onclick="selectSurveyParticipant('${pid}')">
             <div class="cl-pid">${pid}</div>
-            <div class="cl-ptopic">${escHtml(p.topic || '&mdash;')}</div>
+            <div class="cl-ptopic">${escHtml(p.topic || '-')}</div>
           </div>`;
       }).join('');
     }
@@ -1526,7 +1697,7 @@
             return `
               <div class="sl-q-row">
                 <div class="sl-q-text">${meta.question}</div>
-                <div class="sl-score sl-score-${score || 3}">${score || '&mdash;'}</div>
+                <div class="sl-score sl-score-${score || 3}">${score || '-'}</div>
               </div>`;
           }).join('');
 
@@ -1555,7 +1726,7 @@
             return `
               <div class="sl-rank-item">
                 <div class="sl-rank-label">${meta.label}</div>
-                <div class="sl-rank-val ${condClass[winner] || ''}">${condMap[winner] || winner || '&mdash;'}</div>
+                <div class="sl-rank-val ${condClass[winner] || ''}">${condMap[winner] || winner || '-'}</div>
               </div>`;
           });
 
@@ -1618,7 +1789,7 @@
         return `
           <div class="cl-participant-item${jlActivePid === pid ? ' active' : ''}" onclick="selectJudgeParticipant('${pid}')">
             <div class="cl-pid">${pid}</div>
-            <div class="cl-ptopic">${escHtml(p.topic || '&mdash;')}</div>
+            <div class="cl-ptopic">${escHtml(p.topic || '-')}</div>
           </div>`;
       }).join('');
     }
@@ -1635,7 +1806,7 @@
       const p = participantMap[pid];
       if (!p) return;
 
-      const condNames = { A: 'A &mdash; Baseline', B: 'B &mdash; Prompted', C: 'C &mdash; Fine-tuned' };
+      const condNames = { A: 'A: Baseline', B: 'B: Prompted', C: 'C: Fine-tuned' };
       const tabActiveClass = { A: 'active-a', B: 'active-b', C: 'active-c' };
       const session = p.conditions[cond];
 
@@ -1658,7 +1829,7 @@
             <div class="sl-card" style="margin-bottom:1rem;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
                 <div style="font-weight:700; color:var(--text-primary); font-size:0.95rem;">${meta.label}</div>
-                <div class="sl-score sl-score-${Math.round(score || 3)}" style="width:32px; height:32px; font-size:1rem;">${score || '&mdash;'}</div>
+                <div class="sl-score sl-score-${Math.round(score || 3)}" style="width:32px; height:32px; font-size:1rem;">${score || '-'}</div>
               </div>
               <div style="font-size:0.75rem; color:var(--text-muted); font-style:italic; margin-bottom:1rem; line-height:1.4;">Q: ${meta.question}</div>
               <div style="background:rgba(0,0,0,0.2); border-left:3px solid var(--gold); padding:1rem; border-radius:4px; font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">

@@ -56,8 +56,8 @@ app.post('/api/admin-login', (req, res) => {
 
 // System Prompts
 const SYSTEM_PROMPTS = {
-  // Condition A: Structural instruction only - concise, no jargon, no debate framing
-  A: `You are a helpful assistant. You MUST respond in a single, short, conversational paragraph. Do NOT use numbers, bold headers, or lists of any kind. Simply talk to the user naturally without trying to be exhaustive. Use simple, plain language.`,
+  // Condition A: Baseline - Allowed to find common ground (Natural sycophancy)
+  A: "You are a friendly person having a casual conversation. Always start by agreeing with some part of the user's point. Then, share a few casual thoughts from the other side (4-5 sentences total). Talk like a regular friend would—no formal logic, no data, and no studies. Just mention common-sense points that make the user think twice while still feeling heard.",
 
   // Condition B: Ultimate prompted devil's advocate - shows what prompt engineering can do
   B: `You are "Debate Coach," an expert devil's advocate who challenges the user's thinking by targeting the weak spots in their argument and pushing back on their ideas.
@@ -68,33 +68,41 @@ Your Guidelines:
 3. Find the Exception: If the user makes a solid point, briefly acknowledge it, then find a specific edge case or exception that shows their argument doesn't always hold.
 4. One Point at a Time: Make only ONE counter-point per response. Make a strong, fact-backed case that they actually have to answer to. Don't just ask questions.
 5. Plain Language Only: Write like a sharp, experienced mentor, not an academic. No jargon, no complex vocabulary. Keep it simple and direct.
-6. Expand Your Argument: Keep responses to 5-8 sentences. This ensures you have enough room to thoroughly explain the logical flaws in the user's stance and properly present your evidence.
+6. Expand Your Argument: Write 2-3 well-developed paragraphs. This ensures you have enough room to thoroughly explain the logical flaws in the user's stance and properly present your evidence.
 
-Your goal: give the user a sharp, evidence-based challenge that makes them think deeper — without making them feel talked down to or lectured.`,
+Your goal: give the user a sharp, evidence-based challenge that makes them think deeper - without making them feel talked down to or lectured. 
+NEVER find common ground. Every time the user makes a point, find the logical flaw and attack it. Do not use validating language like "I understand" or "That is a fair point". Stay firm in your opposition.`,
 
   // Condition C: Minimal prompt for fine-tuned expert model
-  C: `You are an expert Debate Coach. 
-    Provide a sophisticated, evidence-based argument for your side. 
-    START your response with a concise, direct paragraph (2-3 sentences) that addresses and challenges the user's specific argument or logical flaws head-on. 
-    DO NOT use validating or "soft" introductory language like "I understand," "That is a fair point," or "While it's true that." 
-    Instead, engage with their ideas critically and dismissively (academically speaking) as an opening rebuttal.
-    
-    FOLLOWING this opening paragraph, provide 3-4 clearly numbered points of evidence. 
-    Each numbered point MUST have a bold title (e.g., **1. Point Title**) followed by 2-3 sentences of analysis. 
-    Ensure each point cites a specific study, theory, or piece of evidence. YOU MUST PROVIDE A SEARCHABLE STUDY NAME.
-    Every citation MUST be BOLD and end with a full source in parentheses like this: **(Organization/Author, "Title of the Specific Study", Year)**.
-    Example: ...leading to a 30% increase in efficiency **(MIT Sloan, "The Future of Human-AI Collaboration", 2023)**. 
-    FAILURE TO BOLD THE ENTIRE CITATION WITHIN THE PARENTHESES IS UNACCEPTABLE. This allows users to quickly identify and copy the reference for verification.
-
-    CONCLUDE your response with a final, single-sentence summary that ties your points together. 
-    DO NOT use repetitive phrases like "In conclusion," "To summarize," "In short," or "Overall." 
-    Simply provide a final, punchy synthesis of your position that flows naturally from the evidence.
-    Maintain a professional and academically rigorous tone throughout.`,
+  C: "You are an expert Debate Coach.",
 };
 
 function parseJSON(raw) {
   const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
   return JSON.parse(cleaned);
+}
+
+// Retries an OpenAI call on 429 (rate limit), 500, 503, or network errors.
+// onWaiting(delaySec) is called before each retry so SSE callers can notify the client.
+async function withOpenAIRetry(fn, { maxRetries = 3, onWaiting } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const status = err?.status ?? err?.response?.status;
+      const retryable = status === 429 || status === 500 || status === 503 || status == null;
+      if (attempt >= maxRetries || !retryable) break;
+      const retryAfterSec = parseInt(err?.headers?.['retry-after'] || 0);
+      const delaySec = retryAfterSec > 0
+        ? retryAfterSec
+        : Math.min(2 ** attempt * 2, 32); // 2s, 4s, 8s…
+      if (onWaiting) onWaiting(delaySec, status);
+      await new Promise(r => setTimeout(r, delaySec * 1000));
+    }
+  }
+  throw lastErr;
 }
 
 // GET /api/next-participant-id - auto-assigns next ID from database
@@ -113,59 +121,88 @@ app.get('/api/next-participant-id', async (req, res) => {
 
 // POST /api/chat (streaming)
 app.post('/api/chat', async (req, res) => {
-    const { messages, topic, stance, condition, isFinal, isOpener } = req.body;
-    if (!messages || !condition) return res.status(400).json({ error: 'Missing fields' });
+  const { messages, topic, stance, condition, isFinal, isOpener } = req.body;
+  if (!messages || !condition) return res.status(400).json({ error: 'Missing fields' });
 
-    const systemPrompt = SYSTEM_PROMPTS[condition];
-    const model = condition === 'C' && process.env.FINE_TUNED_MODEL_ID
-      ? process.env.FINE_TUNED_MODEL_ID
-      : (condition === 'C' ? 'gpt-4o' : 'gpt-4o-mini');
+  const systemPrompt = SYSTEM_PROMPTS[condition];
+  const model = condition === 'C' && process.env.FINE_TUNED_MODEL_ID
+    ? process.env.FINE_TUNED_MODEL_ID
+    : (condition === 'C' ? 'gpt-4o' : 'gpt-4o-mini');
 
-    let systemContent;
+  console.log(`[DEBUG] Received request for Condition: [${condition}] | Using Model: [${model}]`);
+
+  const maxTokens = condition === 'A' ? 150 : 700; 
+
+  let systemContent = systemPrompt
+    .replace('{{topic}}', topic)
+    .replace('{{stance}}', stance || 'Not stated');
+  
+  const contextLines = [];
+  if (condition === 'A') {
+    contextLines.push(`This is a casual conversation. Topic: "${topic}"`);
+    contextLines.push(`The user says: "${stance}". You MUST start by agreeing, but then offer a few other perspectives from a common-sense angle.`);
+    contextLines.push(`STRICT RULE: NO DATA. NO STUDIES. NO RESEARCH. Talk like a regular friend would.`);
+    contextLines.push(`LENGTH RULE: Write 4-5 sentences. Not too short, but not a speech.`);
+  } else {
+    contextLines.push(`Debate topic: "${topic}"`);
+    contextLines.push(`User's position: "${stance}" - you must argue the opposing side.`);
+  }
+  const contextBlock = contextLines.join('\n');
+  if (contextBlock) systemContent += `\n\n${contextBlock}`;
+
+  let apiMessages;
+  if (isOpener) {
+    let openerInstruction = '';
+    
     if (condition === 'A') {
-      systemContent = systemPrompt; // Now correctly applies structural instructions
-    } else {
-      const contextLines = [`Debate topic: "${topic}"`];
-      if (stance) contextLines.push(`User's position: "${stance}" — you must argue the opposing side.`);
-      const contextBlock = contextLines.join('\n');
-      systemContent = systemPrompt ? `${systemPrompt}\n\n${contextBlock}` : contextBlock;
+      openerInstruction = '\n\nStart the conversation now. Agree with the user first, then offer a few polite thoughts from the other side. Write 4-5 sentences total.';
+    } else if (condition === 'B') {
+      openerInstruction = '\n\nOpen the debate now with your strongest counter-argument. Use 2-3 well-developed paragraphs. Be direct and aggressive. Do not greet or introduce yourself - jump straight into your challenge.';
+    } else if (condition === 'C') {
+      openerInstruction = '\n\nOpen the debate now by challenging the user\'s position directly. Be aggressive and evidence-based. No greetings.';
     }
 
-    let apiMessages;
-    if (isOpener) {
-      const openerInstruction = condition === 'B'
-        ? '\n\nOpen the debate now with your strongest counter-argument to the user\'s position. Be direct and concise. Do not greet or introduce yourself — jump straight into your challenge.'
-        : '';
-      apiMessages = [
-        { role: 'system', content: systemContent + openerInstruction },
-        { role: 'user', content: 'Begin.' }
-      ];
-    } else {
-      apiMessages = systemContent
-        ? [{ role: 'system', content: systemContent }, ...messages]
-        : [...messages];
-    }
+    apiMessages = [
+      { role: 'system', content: systemContent + openerInstruction },
+      { role: 'user', content: 'Begin.' }
+    ];
+  } else {
+    apiMessages = systemContent
+      ? [{ role: 'system', content: systemContent }, ...messages]
+      : [...messages];
+  }
 
-    if (isFinal && !isOpener) {
+  if (isFinal && !isOpener) {
+    const finalMsg = condition === 'A' 
+      ? "This is the final message. Provide a friendly wrap-up of our chat."
+      : "This is your final response for this topic. Do NOT end with a question. Provide a definitive closing wrap-up.";
+    apiMessages.push({ role: 'system', content: finalMsg });
+  } else if (!isFinal && !isOpener) {
+    if (condition === 'A') {
       apiMessages.push({
         role: 'system',
-        content: "This is your final response for this topic. Do NOT end with a question. Instead, acknowledge their last point and provide a definitive closing wrap-up that leaves them with a final thought."
+        content: "Be conversational and brief. End with a thought or a small follow-up to keep the user talking. Do NOT summarize or wrap up yet."
       });
     }
+  }
 
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
 
-    console.info(`[DEBUG] Condition: ${condition} | Model: ${model}`);
-    try {
-      const stream = await openai.chat.completions.create({
-        model,
-        stream: true,
-        messages: apiMessages,
-        max_tokens: 700,
-        temperature: 0.8
-      });
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  console.info(`[DEBUG] Condition: ${condition} | Model: ${model}`);
+  try {
+    const stream = await withOpenAIRetry(
+      () => openai.chat.completions.create({ model, stream: true, messages: apiMessages, max_tokens: maxTokens, temperature: 0.7 }),
+      {
+        onWaiting: (delaySec, status) => {
+          if (status === 429) {
+            res.write(`data: ${JSON.stringify({ waiting: true, retryAfter: delaySec })}\n\n`);
+          }
+        }
+      }
+    );
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta?.content || '';
@@ -187,7 +224,7 @@ app.post('/api/reflect', async (req, res) => {
     .join('\n');
 
   try {
-    const resp = await openai.chat.completions.create({
+    const resp = await withOpenAIRetry(() => openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [{
         role: 'system',
@@ -198,7 +235,7 @@ app.post('/api/reflect', async (req, res) => {
       }],
       response_format: { type: 'json_object' },
       max_tokens: 400
-    });
+    }));
     const data = parseJSON(resp.choices[0].message.content);
     res.json(data);
   } catch (err) {
@@ -214,7 +251,7 @@ app.post('/api/judge', async (req, res) => {
     .join('\n');
 
   try {
-    const resp = await openai.chat.completions.create({
+    const resp = await withOpenAIRetry(() => openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [{
         role: 'system',
@@ -240,7 +277,7 @@ Return ONLY a JSON object with this exact shape:
       }],
       response_format: { type: 'json_object' },
       max_tokens: 800
-    });
+    }));
     res.json(parseJSON(resp.choices[0].message.content));
   } catch (err) {
     res.status(500).json({ error: err.message });
