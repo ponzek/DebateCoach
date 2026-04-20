@@ -725,6 +725,16 @@
       if (!text) return text;
       let cleaned = text;
       
+      if (condition === 'B') {
+        // Force double newlines for any single newlines to ensure paragraph breaks in Markdown
+        cleaned = cleaned.replace(/([^\n])\n([^\n])/g, '$1\n\n$2');
+        
+        // Anti-smush: If the AI puts the second paragraph on the same line as the first (very common)
+        // We look for common transition words that start second paragraphs like "Moreover", "Furthermore", "Additionally"
+        // and ensure they start a new paragraph.
+        cleaned = cleaned.replace(/([.!?])\s+(Moreover|Furthermore|Additionally|Secondly|In addition)/g, '$1\n\n$2');
+      }
+      
       if (condition === 'C') {
         // 1. Initial Numbering Cleanup (Fixes "1. 1." issues up front)
         cleaned = cleaned.replace(/^(\d+\.)\s+(\d+\.)/gm, '$2');
@@ -1208,7 +1218,7 @@
       localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
       setStanceDisplay(savedStance);
       if (currentCondition === 'A') {
-        sendStanceAsFirstMessage(savedStance);
+        openDebate(savedStance);
       } else {
         openDebate(savedStance);
       }

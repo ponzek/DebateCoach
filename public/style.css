@@ -366,13 +366,15 @@ body {
   border: 1px solid var(--border-subtle);
 }
 
-.message-bubble {
+.message-bubble { 
+  font-size: 0.92rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
   padding: 1.25rem 1.45rem;
   border-radius: 18px;
-  line-height: 1.6;
-  font-size: 0.95rem;
 }
-.message-bubble p { margin-bottom: 0.25rem; }
+.message-bubble p { margin-bottom: 0.85rem; }
 .message-bubble p:last-child { margin-bottom: 0; }
 .message-bubble ul, .message-bubble ol { margin: 1.75rem 0 2.2rem 1.15rem; }
 .message-ai .message-bubble ol { list-style: none; padding-left: 0; margin-left: 0; }
