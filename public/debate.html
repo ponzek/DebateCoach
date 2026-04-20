@@ -885,12 +885,8 @@
       document.getElementById('stanceOverlay').classList.remove('visible');
       setStanceDisplay(stance);
       
-      // Proceed with normal flow
-      if (currentCondition === 'A') {
-        sendStanceAsFirstMessage(stance);
-      } else {
-        openDebate(stance);
-      }
+      // All conditions now use the "AI Opener" pattern
+      openDebate(stance);
     }
 
     function submitStanceSpecific(cond) {
@@ -919,11 +915,7 @@
       updateProgressSteps(ps.conditionsDone);
       setStanceDisplay(stance);
       
-      if (cond === 'A') {
-        sendStanceAsFirstMessage(stance);
-      } else {
-        openDebate(stance);
-      }
+      openDebate(stance);
     }
 
     // Show dev tools in modal if local or ?dev=1
@@ -933,49 +925,6 @@
       document.getElementById('modalDevShortcuts').style.display = 'flex';
     }
 
-
-    async function sendStanceAsFirstMessage(stance) {
-      debateActive = true;
-      messages.push({ role: 'user', content: stance });
-      renderMessage('user', stance);
-      showTyping();
-      try {
-        const resp = await fetchWithRetry('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages,
-            topic: state.topic,
-            stance: state.stance,
-            condition: currentCondition,
-            isFinal: false
-          })
-        });
-        removeTyping();
-        if (!resp.ok) throw new Error('API error ' + resp.status);
-        const bubble = renderMessage('assistant', '', true);
-        const aiText = await streamToElement(resp, bubble);
-        document.getElementById('streaming-msg')?.removeAttribute('id');
-        document.getElementById('streaming-bubble')?.removeAttribute('id');
-
-        const finalAiText = `This is the first of our 5 exchanges for this round.\n\n` + aiText;
-        bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
-
-        messages.push({ role: 'assistant', content: aiText });
-        persistMessages();
-
-        // Stance opener does NOT count as an exchange.
-        document.getElementById('exchangeCount').textContent = '0';
-        document.getElementById('chatInput').focus();
-      } catch (err) {
-        removeTyping();
-        messages.pop();
-        showError(
-          'Your opening message didn\'t go through  - the AI couldn\'t be reached. Check your connection.',
-          () => sendStanceAsFirstMessage(stance)
-        );
-      }
-    }
 
     async function openDebate(stance) {
       debateActive = true;
@@ -999,10 +948,11 @@
         document.getElementById('streaming-msg')?.removeAttribute('id');
         document.getElementById('streaming-bubble')?.removeAttribute('id');
 
-        const finalAiText = aiText;
+        // disclaimer as the first sentence
+        const finalAiText = `This is the first of our 5 exchanges for this round. ` + aiText;
         bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
 
-        messages.push({ role: 'assistant', content: finalAiText });
+        messages.push({ role: 'assistant', content: aiText });
         persistMessages();
         
         // Add a subtle system notice for the first exchange

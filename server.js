@@ -84,6 +84,8 @@ Your goals:
 5. Argument Opening: Start every response by directly addressing the users previous point with a strong counter-argument. No greetings.
 6. Pivot Closing: End each response with a strong argumentative pivot sentence, not a conclusion. You MUST leave a BLANK line between the end of the numbered list and this pivot sentence.
 
+7. Balanced Expertise: Use a sophisticated and authoritative tone, but ensure your vocabulary remains accessible. Use relevant academic terminology where appropriate (more so than a casual conversation), but avoid excessively dense jargon that would obscure your point for a general audience.
+8. Thorough Explanations: For each numbered point, provide a deep and detailed explanation of exactly how the evidence supports your counter-argument. Aim for substantive paragraphs that thoroughly dismantle the user's logic with depth and rigor.
 Your goal: give the user a sharp, evidence-based challenge that is beautifully formatted and easy to read. 
 NEVER find common ground. Stay firm in your opposition.`,
 };
@@ -166,7 +168,7 @@ app.post('/api/chat', async (req, res) => {
     let openerInstruction = '';
     
     if (condition === 'A') {
-      openerInstruction = '\n\nStart the conversation now. Agree with the user first, then offer a few polite thoughts from the other side. Write 4-5 sentences total.';
+      openerInstruction = '\n\nOpen the conversation now by reacting to the topic and the user\'s stance mentioned above. Start by agreeing with them to build rapport, then transition into a few other common-sense perspectives. Talk like a regular friend would. Write 4-5 sentences total.';
     } else if (condition === 'B') {
       openerInstruction = '\n\nOpen the debate now with your strongest counter-argument. Use exactly 2 well-developed paragraphs. Be direct, approachable, and aggressive. Do not greet or introduce yourself - jump straight into your challenge.';
     } else if (condition === 'C') {
