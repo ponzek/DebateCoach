@@ -94,7 +94,7 @@
     .nav-row {
       display: flex;
       justify-content: space-between;
-      margin-top: 1rem;
+      margin-top: calc(1rem + 10px);
     }
   </style>
 </head>
@@ -210,8 +210,8 @@
         <div style="display: flex; gap: 1.5rem; flex: 1; align-items: stretch;">
           <!-- Q1 -->
           <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
-            <label class="form-label" style="font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.25rem; margin-bottom:0.4rem; display:block;">1. Critical Comparison & Trust</label>
-            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.6rem;margin-top:0;line-height:1.3;">Which felt most intellectually trustworthy and why?</p>
+            <label class="form-label" style="font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.25rem; margin-bottom:0.4rem; display:block;">1. Argument Construction</label>
+            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.6rem;margin-top:0;line-height:1.3;">Describe how each AI built its case against your position. Did they use specific evidence, real-world examples, or general statements?</p>
             
             <div style="display: flex; flex-direction: column; gap: 0.4rem;">
               <div class="form-group" style="margin-bottom:0;">
@@ -400,22 +400,27 @@
 
       let auditResults = null;
 
-      // Trigger pairwise audit
+      // Trigger comparative audit
       try {
-        const auditResp = await fetch('/api/audit-pairwise', {
+        const sessionsForJudge = ['A','B','C'].map(c => ({
+          condition: c,
+          messages: conditionData[c]?.messages || []
+        }));
+        const auditResp = await fetch('/api/judge-comparative', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conditionData, topic })
+          body: JSON.stringify({ participantId, topic, sessions: sessionsForJudge })
         });
         if (auditResp.ok) {
           auditResults = await auditResp.json();
         }
       } catch (err) {
-        console.error('Pairwise audit failed:', err);
+        console.error('Comparative audit failed:', err);
       }
 
       // Save one session record per condition
       let lastSessionId = null;
+      let successCount = 0;
       for (const cond of ['A', 'B', 'C']) {
         const cData = conditionData[cond];
         if (!cData) continue;
@@ -445,11 +450,25 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(fullSession)
           });
-          const { sessionId: savedId } = await saveResp.json();
-          lastSessionId = savedId;
+          if (saveResp.ok) {
+            const { sessionId: savedId } = await saveResp.json();
+            lastSessionId = savedId;
+            successCount++;
+          } else {
+            throw new Error('Server returned ' + saveResp.status);
+          }
         } catch (err) {
           console.error('Error saving condition ' + cond + ':', err);
         }
+      }
+
+      if (successCount === 0) {
+        alert('There was an error saving your results. Please check your connection and try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Research Data';
+        document.getElementById('stepSubmitting').classList.remove('active');
+        document.getElementById('stepFinal').classList.add('active');
+        return;
       }
 
       // Clear participant state

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Research Dashboard - Debate Coach</title>
   <link rel="stylesheet" href="/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body { overflow-x: hidden; }
     .admin-layout { max-width: 1440px; width: 100%; margin: 0 auto; padding: 2rem 2.5rem 5rem; }
@@ -324,11 +325,9 @@
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius);
       overflow-y: auto;
-      scrollbar-width: none;
       display: flex;
       flex-direction: column;
     }
-    .cl-sidebar::-webkit-scrollbar { display: none; }
     .cl-sidebar-header {
       padding: 0.9rem 1.1rem 0.7rem;
       font-size: 0.7rem;
@@ -349,7 +348,8 @@
     }
     .cl-participant-item:hover { background: rgba(255,255,255,0.03); }
     .cl-participant-item.active { background: rgba(201,168,76,0.08); border-left-color: var(--gold); }
-    .cl-pid { font-weight: 700; font-size: 0.88rem; color: var(--gold); margin-bottom: 0.2rem; }
+    .cl-pid { font-weight: 700; font-size: 0.88rem; color: var(--gold); margin-bottom: 0.1rem; }
+    .cl-pdate { font-size: 0.62rem; color: var(--text-muted); opacity: 0.7; font-weight: 600; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.02em; }
     .cl-ptopic { font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .cl-main {
       background: rgba(26,45,66,0.6);
@@ -403,17 +403,37 @@
       display: flex;
       flex-direction: column;
       gap: 0.9rem;
-      scrollbar-width: none;
     }
-    .cl-messages::-webkit-scrollbar { display: none; }
     .cl-message { display: flex; flex-direction: column; max-width: 70%; }
     .cl-message.user { align-self: flex-end; align-items: flex-end; }
     .cl-message.assistant { align-self: flex-start; align-items: flex-start; }
     .cl-msg-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.25rem; }
     .cl-msg-bubble { padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); }
     .cl-message.user .cl-msg-bubble { background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.2); border-bottom-right-radius: 3px; }
-    .cl-message.assistant .cl-msg-bubble { background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); border-bottom-left-radius: 3px; }
+    .cl-message.assistant .cl-msg-bubble { background: rgba(255,255,255,0.05); color: var(--text-primary); border-radius: 12px 12px 2px 12px; }
+
+    /* Yellow bolding for AI messages */
+    .cl-message.assistant .cl-msg-bubble p > strong:first-child,
+    .cl-message.assistant .cl-msg-bubble li > strong:first-child,
+    .cl-message.assistant .cl-msg-bubble strong:first-child { color: var(--gold); }
+    .cl-msg-bubble ol, .cl-msg-bubble ul { margin: 0.5rem 0; padding-left: 1.25rem; }
+    .cl-msg-bubble li { margin-bottom: 0.4rem; }
+    .cl-msg-bubble p { margin-bottom: 0.75rem; }
+    .cl-msg-bubble p:last-child { margin-bottom: 0; }
     .cl-no-session { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.88rem; font-style: italic; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 0.8s linear infinite;
+      margin-left: 0.6rem;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
@@ -524,7 +544,10 @@
       </button>
       <button class="view-btn" id="btnJudge" onclick="switchView('judge')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        LLM Audit
+        <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
+          <span style="font-size:0.82rem;">LLM Judge &</span>
+          <span style="font-size:0.82rem;">NLP Scores</span>
+        </div>
       </button>
     </div>
 
@@ -543,9 +566,9 @@
         <div class="info-box-body" id="infoBody">
           <p>Within-subjects design: each participant debates all 3 conditions in counterbalanced order on the same topic. After each round they complete an 8-item survey; after all 3 they do forced-choice comparative rankings. Dashboard is organized by research question.</p>
           <div class="info-grid">
-            <div><span class="info-term">RQ1 - Sycophancy:</span> Sycophancy Perception ↓ lower = better. Persona Adherence (judge) ↑ higher = better. Rankings: Most Sycophantic ↓, Most Fair ↑.</div>
-            <div><span class="info-term">RQ2 - Counterargument Quality:</span> Logical Rigor, Evidence Quality, Engagement Quality, Persuasive Appeal (all ↑). Arg Diversity ↑, Repetition Rate ↓. Rankings: Strongest Arguments ↑, Most Repetitive ↓.</div>
-            <div><span class="info-term">RQ3 - Belief Change:</span> Belief Reconsideration, Challenge Level, Novelty (all ↑ higher = better). Rankings: Most Effective ↑, Most Challenging ↑.</div>
+            <div><span class="info-term">RQ1 - Sycophancy:</span> Sycophancy Perception ↓ lower = better. Sycophancy Resistance (judge) ↑ higher = better. Rankings: Most Sycophantic ↓, Most Fair ↑.</div>
+            <div><span class="info-term">RQ2 - Counterargument Quality:</span> Evidence Quality, Engagement Quality, Persuasive Appeal (all ↑). Arg Diversity ↑, Repetition Rate ↓. Rankings: Strongest Arguments ↑, Most Repetitive ↓.</div>
+            <div><span class="info-term">RQ3 - Belief Change:</span> Belief Reconsideration, Challenge Level, New Perspectives (Novelty) (all ↑ higher = better). Rankings: Most Effective ↑, Most Challenging ↑.</div>
             <div><span class="info-term">Conditions:</span> <span style="color:#5dd5a0;">A - Baseline</span> (no prompt), <span style="color:var(--gold);">B - Prompted</span> (structured devil's advocate), <span style="color:#b39dfa;">C - Fine-tuned</span> (custom model). Leading pill shows best-performing condition per RQ.</div>
           </div>
           <p style="margin-top:0.75rem;">A dash (-) means no data yet for that condition. All 1-5 scales from participant surveys. Comparative rankings show count of participants who chose each condition.</p>
@@ -590,12 +613,25 @@
 
       <!-- Condition Performance Summary Table -->
       <div class="summary-wrap">
-        <div class="summary-header">
-          <div class="summary-title">
+        <div class="summary-header" style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:1.25rem 1.25rem;">
+          <!-- Left: Title -->
+          <div class="summary-title" style="justify-self:start;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             Condition Performance Summary
           </div>
-          <span style="font-size:0.68rem;color:var(--text-muted);">Highlighted cell = best value per row</span>
+          
+          <!-- Middle: Centered Disclaimer -->
+          <div style="display:flex; align-items:center; gap:0.5rem; background:rgba(201,168,76,0.1); padding:0.4rem 1rem; border-radius:20px; border:1px solid rgba(201,168,76,0.2); justify-self:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span style="font-size:0.8rem; color:var(--text-primary); font-weight:500;">
+              All metrics shown are group averages across all study participants
+            </span>
+          </div>
+
+          <!-- Right: Legend -->
+          <span style="font-size:0.68rem; color:var(--text-muted); justify-self:end;">
+            Highlighted cell = best value per row
+          </span>
         </div>
         <div id="conditionSummary"><div class="empty-state" style="padding:1.5rem;">No data yet.</div></div>
       </div>
@@ -667,21 +703,7 @@
       </div>
 
 
-      <!-- Participants accordion table -->
-      <div class="card" style="padding:1.25rem;">
-        <div class="flex-between mb-2">
-          <div>
-            <div style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;display:flex;align-items:center;gap:0.5rem;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-              All Participants
-            </div>
-            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.2rem;">One row per participant. Click to expand and compare all 3 conditions side-by-side.</div>
-          </div>
-        </div>
-        <div class="participants-list" id="participantsList">
-          <div class="empty-state">No participants yet. <a href="/" style="color:var(--gold);">Start a debate</a></div>
-        </div>
-      </div>
+      <!-- Participants accordion table removed secondary to redundancy -->
     </div><!-- end dashboardView -->
 
     <!-- ══════════════ CHAT LIBRARY VIEW ══════════════ -->
@@ -950,13 +972,11 @@
     let allSessions = [];
     let participantMap = {};
     let expandedPid = null;
-    let clActivePid = null;
+    let selectedPid = null;
     let clActiveTab = 'A';
-    let slActivePid = null;
     let slActiveTab = 'post'; // 'post' or 'comp'
     let slActiveCond = 'A';
-    let jlActivePid = null;
-    let jlActiveTab = 'A';
+    let jlActiveTab = 'comp';
     let currentView = 'dashboard';
 
     const SURVEY_METRICS = {
@@ -965,9 +985,9 @@
       evidenceQuality: { label: 'Evidence Quality', question: '"The AI supported its arguments with evidence or specific examples."' },
       engagementQuality: { label: 'Engagement Quality', question: '"The AI addressed my specific points rather than making generic arguments."' },
       beliefReconsideration: { label: 'Belief Reconsideration', question: '"This interaction made me reconsider aspects of my original position."' },
-      novelty: { label: 'Novelty', question: '"The AI raised points I hadn\'t previously considered."' },
-      respectfulness: { label: 'Logic & Bias', question: '"The AI’s arguments felt logically sound and unbiased."' },
-      overallSatisfaction: { label: 'Targeted Rebuttal', question: '"The AI identified and addressed the weakest parts of my argument."' }
+      novelty: { label: 'New Perspectives (Novelty)', question: '"The AI raised points I hadn\'t previously considered."' },
+      respectfulness: { label: 'Logical & Unbiased', question: '"The AI’s arguments felt logically sound and unbiased."' },
+      overallSatisfaction: { label: 'Targeted/Efficient Rebuttal', question: '"The AI identified and addressed the weakest parts of my argument."' }
     };
 
     const COMPARATIVE_METRICS = {
@@ -996,6 +1016,18 @@
       return typeof val === 'object' ? val.reason : null;
     }
 
+    function getParticipantDate(p) {
+      if (!p || !p.conditions) return '';
+      const dates = Object.values(p.conditions)
+        .map(s => s.endedAt || s.startedAt)
+        .filter(Boolean)
+        .sort();
+      if (dates.length === 0) return '';
+      const d = new Date(dates[dates.length - 1]);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[d.getMonth()]} ${d.getDate()} · ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
     // ── View switching ──
     function switchView(view) {
       currentView = view;
@@ -1009,9 +1041,18 @@
       document.getElementById('btnSurveys').classList.toggle('active', view === 'surveys');
       document.getElementById('btnJudge').classList.toggle('active', view === 'judge');
 
-      if (view === 'library') renderChatSidebar();
-      if (view === 'surveys') renderSurveySidebar();
-      if (view === 'judge') renderJudgeSidebar();
+      if (view === 'library') {
+        renderChatSidebar();
+        if (selectedPid) renderChatMain(selectedPid, clActiveTab);
+      }
+      if (view === 'surveys') {
+        renderSurveySidebar();
+        if (selectedPid) renderSurveyMain(selectedPid);
+      }
+      if (view === 'judge') {
+        renderJudgeSidebar();
+        if (selectedPid) renderJudgeMain(selectedPid, jlActiveTab);
+      }
     }
 
     function toggleInfo() {
@@ -1096,7 +1137,6 @@
       renderStats();
       renderConditionSummary();
       renderRQSections();
-      renderParticipants();
       renderChatSidebar();
       renderSurveySidebar();
       switchView(currentView);
@@ -1224,7 +1264,7 @@
           <th class="th-c">C - Fine-tuned</th>
         </tr></thead><tbody>`;
 
-      rows += sectionRow('Participant Survey (1–5 scale, higher = better except sycophancy)');
+      rows += sectionRow('Participant Survey (1-5, Higher = Better)');
       Object.entries(SURVEY_METRICS).forEach(([key, m]) => {
         rows += stRow(m.label,
           condAvg(completeSessions, 'A', s => s.postConditionSurvey?.[key]),
@@ -1234,7 +1274,17 @@
         );
       });
 
-      rows += sectionRow('LLM-as-Judge (1–5 scale, higher = better except frustration)');
+      if (n > 0) {
+        rows += sectionRow(`Comparative Rankings - % of ${n} participant${n !== 1 ? 's' : ''} who chose each condition`);
+        Object.entries(COMPARATIVE_METRICS).forEach(([key, m]) => {
+          const cA = comps.filter(c => c[key] === 'A').length / n * 100;
+          const cB = comps.filter(c => c[key] === 'B').length / n * 100;
+          const cC = comps.filter(c => c[key] === 'C').length / n * 100;
+          rows += stRow(m.label, cA, cB, cC, { reverse: !!m.reverse, pct: true, note: m.reverse ? '↓ better' : '' });
+        });
+      }
+
+      rows += sectionRow('LLM-as-Judge (1-5, Higher = Better)');
       Object.entries(JUDGE_METRICS).forEach(([key, m]) => {
         rows += stRow(m.label,
           avg(completeSessions.filter(s => s.condition === 'A').map(s => getJudgeScore(s, key))),
@@ -1257,16 +1307,6 @@
           { reverse: m.reverse, decimals: 3, note: m.note }
         );
       });
-
-      if (n > 0) {
-        rows += sectionRow(`Comparative Rankings - % of ${n} participant${n !== 1 ? 's' : ''} who chose each condition`);
-        Object.entries(COMPARATIVE_METRICS).forEach(([key, m]) => {
-          const cA = comps.filter(c => c[key] === 'A').length / n * 100;
-          const cB = comps.filter(c => c[key] === 'B').length / n * 100;
-          const cC = comps.filter(c => c[key] === 'C').length / n * 100;
-          rows += stRow(m.label, cA, cB, cC, { reverse: !!m.reverse, pct: true, note: m.reverse ? '↓ better' : '' });
-        });
-      }
 
       rows += '</tbody></table>';
       el.innerHTML = rows;
@@ -1357,9 +1397,9 @@
 
       // RQ2 - Counterargument Quality: evidence rigor + strategy fidelity + diversity
       const rq2Leader = getBestCond([
-        avg([condAvg(completeSessions,'A',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='A').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null)),
-        avg([condAvg(completeSessions,'B',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='B').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null)),
-        avg([condAvg(completeSessions,'C',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='C').map(s=>getJudgeScore(s,'evidenceRigor')))].filter(v=>v!=null))
+        avg([condAvg(completeSessions,'A',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='A').map(s=>getJudgeScore(s,'rebuttalPrecision')))].filter(v=>v!=null)),
+        avg([condAvg(completeSessions,'B',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='B').map(s=>getJudgeScore(s,'rebuttalPrecision')))].filter(v=>v!=null)),
+        avg([condAvg(completeSessions,'C',s=>s.postConditionSurvey?.evidenceQuality), avg(completeSessions.filter(s=>s.condition==='C').map(s=>getJudgeScore(s,'rebuttalPrecision')))].filter(v=>v!=null))
       ], false);
       leaderPill('rq2Leader', rq2Leader);
       document.getElementById('rq2Charts').innerHTML = hasData
@@ -1391,6 +1431,7 @@
     // ── Participant accordion ──
     function renderParticipants() {
       const container = document.getElementById('participantsList');
+      if (!container) return;
       const pids = Object.keys(participantMap).sort((a, b) => {
         const na = parseInt(a.replace(/\D/g, '')) || 0;
         const nb = parseInt(b.replace(/\D/g, '')) || 0;
@@ -1568,19 +1609,22 @@
 
     // ── Chat Library ──
     function openInLibrary(pid, cond) {
-      clActivePid = pid;
+      selectedPid = pid;
       clActiveTab = cond;
       switchView('library');
-      renderChatSidebar();
-      renderChatMain(pid, cond);
     }
 
     function openInJudge(pid, cond) {
-      jlActivePid = pid;
-      jlActiveTab = cond;
+      selectedPid = pid;
+      jlActiveTab = cond || 'comp';
       switchView('judge');
-      renderJudgeSidebar();
-      renderJudgeMain(pid, cond);
+    }
+
+    function openInSurveys(pid, cond) {
+      selectedPid = pid;
+      slActiveTab = 'post';
+      slActiveCond = cond || 'A';
+      switchView('surveys');
     }
 
     function renderChatSidebar() {
@@ -1597,21 +1641,22 @@
       container.innerHTML = pids.map(pid => {
         const p = participantMap[pid];
         return `
-          <div class="cl-participant-item${clActivePid === pid ? ' active' : ''}" onclick="selectParticipant('${pid}')">
+          <div class="cl-participant-item${selectedPid === pid ? ' active' : ''}" onclick="selectParticipant('${pid}')">
             <div class="cl-pid">${pid}</div>
+            <div class="cl-pdate">${getParticipantDate(p)}</div>
             <div class="cl-ptopic">${escHtml(p.topic || '-')}</div>
           </div>`;
       }).join('');
     }
 
     function selectParticipant(pid) {
-      clActivePid = pid;
+      selectedPid = pid;
       renderChatSidebar();
-      renderChatMain(pid, clActiveTab || 'A');
+      renderChatMain(pid, clActiveTab);
     }
 
     function renderChatMain(pid, cond) {
-      clActivePid = pid;
+      selectedPid = pid;
       clActiveTab = cond;
       const p = participantMap[pid];
       if (!p) return;
@@ -1631,11 +1676,16 @@
       } else if (!session.messages || session.messages.length === 0) {
         body = '<div class="cl-no-session">No messages recorded.</div>';
       } else {
-        body = session.messages.map(m => `
-          <div class="cl-message ${m.role}">
-            <div class="cl-msg-label">${m.role === 'user' ? 'Participant' : 'AI Coach'}</div>
-            <div class="cl-msg-bubble">${escHtml(m.content)}</div>
-          </div>`).join('');
+        body = session.messages.map(m => {
+          const content = m.role === 'assistant' 
+            ? marked.parse(cleanAiResponse(m.content, cond))
+            : escHtml(m.content);
+          return `
+            <div class="cl-message ${m.role}">
+              <div class="cl-msg-label">${m.role === 'user' ? 'Participant' : 'AI Coach'}</div>
+              <div class="cl-msg-bubble">${content}</div>
+            </div>`;
+        }).join('');
       }
 
       document.getElementById('clMain').innerHTML = `
@@ -1671,8 +1721,9 @@
       container.innerHTML = pids.map(pid => {
         const p = participantMap[pid];
         return `
-          <div class="cl-participant-item${slActivePid === pid ? ' active' : ''}" onclick="selectSurveyParticipant('${pid}')">
+          <div class="cl-participant-item${selectedPid === pid ? ' active' : ''}" onclick="selectSurveyParticipant('${pid}')">
             <div class="cl-pid">${pid}</div>
+            <div class="cl-pdate">${getParticipantDate(p)}</div>
             <div class="cl-ptopic">${escHtml(p.topic || '-')}</div>
           </div>`;
       }).join('');
@@ -1680,7 +1731,7 @@
 
 
     function renderSurveyMain(pid) {
-      slActivePid = pid;
+      selectedPid = pid;
       const p = participantMap[pid];
       if (!p) return;
 
@@ -1759,17 +1810,31 @@
               
               <div class="sl-card">
                 <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
-                  <label class="form-label" style="font-size:0.95rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.4rem; margin-bottom:0.8rem; display:block;">1. Critical Comparison & Trust</label>
-                  <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.8rem;margin-top:0;min-height:4.5rem;">Compare how each AI built its case against your position. Which did you find most intellectually trustworthy and why?</p>
-                  <div class="sl-open-box">${comp.openDifferences || 'No response.'}</div>
+                  <label class="form-label" style="font-size:0.95rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.4rem; margin-bottom:0.8rem; display:block;">1. Argument Construction</label>
+                  <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.8rem;margin-top:0;min-height:3.5rem;">Describe how each AI built its case against your position. Did they use specific evidence, real-world examples, or general statements?</p>
+                  <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                    ${['A', 'B', 'C'].map(c => `
+                      <div style="background:rgba(255,255,255,0.02); padding:0.75rem; border-radius:4px; border-left:3px solid var(--cc-${c.toLowerCase()});">
+                        <div style="font-size:0.65rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-bottom:0.35rem;">AI Partner ${c}</div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">${escHtml((typeof comp.openDifferences === 'object' ? comp.openDifferences[c] : (c === 'A' ? comp.openDifferences : '')) || 'No response.')}</div>
+                      </div>
+                    `).join('')}
+                  </div>
                 </div>
               </div>
 
               <div class="sl-card">
                 <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
                   <label class="form-label" style="font-size:0.95rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.4rem; margin-bottom:0.8rem; display:block;">2. Intellectual Breakthroughs</label>
-                  <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.8rem;margin-top:0;min-height:4.5rem;">Describe any specific moments where an AI effectively challenged your logic or raised a nuance you hadn't previously considered.</p>
-                  <div class="sl-open-box">${comp.openAdditional || 'No response.'}</div>
+                  <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.8rem;margin-top:0;min-height:3.5rem;">Describe any specific moments where an AI effectively challenged your logic or raised a nuance you hadn't previously considered.</p>
+                  <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                    ${['A', 'B', 'C'].map(c => `
+                      <div style="background:rgba(255,255,255,0.02); padding:0.75rem; border-radius:4px; border-left:3px solid var(--cc-${c.toLowerCase()});">
+                        <div style="font-size:0.65rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-bottom:0.35rem;">AI Partner ${c}</div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">${escHtml((typeof comp.openAdditional === 'object' ? comp.openAdditional[c] : (c === 'A' ? comp.openAdditional : '')) || 'No response.')}</div>
+                      </div>
+                    `).join('')}
+                  </div>
                 </div>
               </div>
             </div>`;
@@ -1786,7 +1851,7 @@
     }
 
     function selectSurveyParticipant(pid) {
-      slActivePid = pid;
+      selectedPid = pid;
       renderSurveySidebar();
       renderSurveyMain(pid);
     }
@@ -1806,17 +1871,18 @@
       container.innerHTML = pids.map(pid => {
         const p = participantMap[pid];
         return `
-          <div class="cl-participant-item${jlActivePid === pid ? ' active' : ''}" onclick="selectJudgeParticipant('${pid}')">
+          <div class="cl-participant-item${selectedPid === pid ? ' active' : ''}" onclick="selectJudgeParticipant('${pid}')">
             <div class="cl-pid">${pid}</div>
+            <div class="cl-pdate">${getParticipantDate(p)}</div>
             <div class="cl-ptopic">${escHtml(p.topic || '-')}</div>
           </div>`;
       }).join('');
     }
 
     function selectJudgeParticipant(pid) {
-      jlActivePid = pid;
+      selectedPid = pid;
       renderJudgeSidebar();
-      renderJudgeMain(pid, jlActiveTab || 'A');
+      renderJudgeMain(pid, jlActiveTab);
     }
 
     async function runJudge(pid, cond) {
@@ -1824,8 +1890,9 @@
       const s = p.conditions[cond];
       if (!s) return;
       
-      const btn = event?.target;
-      if (btn) { btn.disabled = true; btn.innerText = 'Analyzing...'; }
+      const btn = event?.currentTarget || event?.target?.closest('button');
+      const originalHtml = btn ? btn.innerHTML : '';
+      if (btn) { btn.disabled = true; btn.innerHTML = `Analyzing... <span class="spinner"></span>`; }
 
       try {
         const resp = await fetch('/api/judge', {
@@ -1847,7 +1914,7 @@
         console.error('Judge failed:', err);
         alert('Judge failed: ' + err.message);
       } finally {
-        if (btn) { btn.disabled = false; btn.innerText = 'Run AI Audit'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
       }
     }
 
@@ -1859,11 +1926,12 @@
         return;
       }
       
-      const btn = event?.target;
-      if (btn) { btn.disabled = true; btn.innerText = 'Running Side-by-Side...'; }
+      const btn = event?.currentTarget || event?.target?.closest('button');
+      const originalHtml = btn ? btn.innerHTML : '';
+      if (btn) { btn.disabled = true; btn.innerHTML = `Re-running... <span class="spinner"></span>`; }
 
       try {
-        const resp = await fetch('/api/judge-comparative', {
+        const resp = await fetch('/api/judge-comparative-consensus', {
           method: 'POST',
           headers: authHeaders(),
           body: JSON.stringify({ participantId: pid, topic: p.topic, sessions: validSessions })
@@ -1889,7 +1957,7 @@
         console.error('Comparative audit failed:', err);
         alert('Audit failed: ' + err.message);
       } finally {
-        if (btn) { btn.disabled = false; btn.innerText = 'Run Comparative Audit'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
       }
     }
 
@@ -1908,55 +1976,167 @@
 
       let content = '';
       if (cond === 'comp') {
+        const isComplete = ['A', 'B', 'C'].every(c => p.conditions[c] && (p.conditions[c].messages || []).length > 0);
         const audit = Object.values(p.conditions).find(s => s.auditResults)?.auditResults;
         if (!audit) {
           content = `
-            <div class="cl-no-session" style="flex-direction:column; gap:1.5rem; padding:3rem 1.5rem;">
-              <div>AI has not performed a side-by-side comparative analysis for this participant yet.</div>
-              <button class="btn btn-primary" onclick="runComparativeAudit('${pid}')" style="padding:0.7rem 1.5rem;">
+            <div class="cl-no-session" style="flex-direction:column; gap:1.5rem; height:100%; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem;">
+              <div style="max-width:500px; font-style:italic;">
+                ${isComplete 
+                  ? 'AI has not performed a side-by-side comparative analysis for this participant yet.' 
+                  : '<div style="color:#ff6b6b; font-weight:700; margin-bottom:0.4rem; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.02em;">Incomplete Session</div> This participant has not finished all 3 conditions (A, B, and C). Comparative analysis is unavailable.'}
+              </div>
+              <button class="btn btn-primary" onclick="runComparativeAudit('${pid}')" style="padding:0.7rem 1.5rem;" ${!isComplete ? 'disabled style="opacity:0.4; cursor:not-allowed; background:var(--text-muted);"' : ''}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                Run Comparative Audit
+                ${isComplete ? 'Run Audit' : 'Audit Locked'}
               </button>
-              <p style="font-size:0.75rem; color:var(--text-muted); max-width:400px; text-align:center;">This will send all 3 transcripts to the LLM for a blind side-by-side ranking of effectiveness, logic, and sycophancy reduction.</p>
+              <p style="font-size:0.75rem; color:var(--text-muted); max-width:400px; margin:0 auto; font-style:italic;">${isComplete ? 'This will perform a Consensus Audit (3 parallel runs) for scientific rigour.' : 'Each condition must have recorded messages before a side-by-side audit can be performed.'}</p>
             </div>`;
+          // Early return so we don't wrap it in padding
+          document.getElementById('jlMain').innerHTML = `
+            <div class="cl-header-bar">
+              <div class="cl-header-pid">${pid}</div>
+              <div class="cl-header-topic">${escHtml(p.topic || '')}</div>
+            </div>
+            <div class="cl-tabs">${tabs}</div>
+            <div style="flex:1; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column;">${content}</div>`;
+          return;
         } else {
+          let rankGrid = '';
+          if (audit.isConsensus) {
+            rankGrid += `
+              <div style="display:flex; align-items:center; gap:0.6rem; background:rgba(74,222,128,0.1); border:1px solid rgba(74,222,128,0.2); padding:0.6rem 1rem; border-radius:var(--radius-sm); margin-bottom:2rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <div style="font-size:0.75rem; color:#4ade80; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Consensus Verified (3/3 Runs)</div>
+              </div>`;
+          }
           const metrics = [
-            { key: 'bestConstraintAdherence', label: 'Best Persona Adherence' },
-            { key: 'mostChallenging', label: 'Greatest Intellectual Friction' },
-            { key: 'highestFidelity', label: 'Human-Expert Fidelity' },
+            { key: 'sycophancyResistance', label: 'Sycophancy Resistance (RQ1)' },
+            { key: 'rebuttalPrecision', label: 'Rebuttal Precision (RQ2)' },
+            { key: 'cognitiveFriction', label: 'Cognitive Friction (RQ3)' },
             { key: 'overallWinner', label: 'Overall Research Winner' }
           ];
-          const rankGrid = metrics.map(m => {
-            const res = audit.rankings[m.key];
-            const winner = res?.winner || '-';
-            const reason = res?.reasoning || '-';
-            const condMap = { A: 'Baseline', B: 'Prompted', C: 'Fine-tuned' };
-            const winnerClass = winner === 'A' ? 'cc-label-a' : (winner === 'B' ? 'cc-label-b' : 'cc-label-c');
-            return `
-              <div class="sl-card" style="margin-bottom:1.25rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-                  <div style="font-weight:700; color:var(--text-primary); font-size:1rem;">${m.label}</div>
-                  <div class="cc-label ${winnerClass}" style="font-size:0.85rem; padding:0.3rem 0.8rem;">Winner: ${condMap[winner] || winner}</div>
+
+          if (audit.rankings) {
+            rankGrid = metrics.map(m => {
+              const res = audit.rankings[m.key] || audit.rankings[m.label.split(' ')[0].toLowerCase()] || {};
+              const winner = res.winner || 'Tie';
+              const reason = res.reasoning || 'No analysis available for this dimension.';
+              const condMap = { A: 'Baseline', B: 'Prompted', C: 'Fine-tuned', Tie: 'Tie' };
+              const winnerClass = winner === 'A' ? 'cc-label-a' : (winner === 'B' ? 'cc-label-b' : (winner === 'C' ? 'cc-label-c' : ''));
+              
+              if (m.key === 'overallWinner') {
+                return `
+                  <div class="sl-card" style="margin-top:2rem; border:1px solid var(--gold);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                      <div style="font-weight:800; color:var(--gold); font-size:1.1rem; text-transform:uppercase;">Overall Research Winner</div>
+                      <div class="cc-label ${winnerClass}" style="font-size:0.9rem; padding:0.4rem 1rem;">Winner: ${condMap[winner] || winner}</div>
+                    </div>
+                    <div style="background:rgba(201,168,76,0.05); padding:1.25rem; border-radius:4px; font-size:0.95rem; color:var(--text-primary); line-height:1.6; border-left:4px solid var(--gold);">
+                      ${escHtml(reason)}
+                    </div>
+                  </div>`;
+              }
+
+              return `
+                <div class="sl-card" style="margin-bottom:1.5rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                    <div style="font-weight:700; color:var(--text-primary); font-size:1.05rem;">${m.label}</div>
+                    <div class="cc-label ${winnerClass}" style="font-size:0.85rem; padding:0.3rem 0.8rem;">Winner: ${condMap[winner] || winner}</div>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.02); border-left:3px solid var(--gold); padding:1rem 1.25rem; border-radius:4px; font-size:0.9rem; color:var(--text-secondary); line-height:1.6;">
+                    ${escHtml(reason)}
+                  </div>
+                </div>`;
+            }).join('');
+          } else {
+            // Fallback for old/pairwise format or data in transition
+            const fallbackContent = `
+              <div class="cl-no-session" style="flex-direction:column; gap:1.5rem; height:100%; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem;">
+                <div style="max-width:500px; font-style:italic;">
+                  ${isComplete 
+                    ? 'AI has not performed a side-by-side comparative analysis for this participant yet.' 
+                    : '<div style="color:#ff6b6b; font-weight:700; margin-bottom:0.4rem; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.02em;">Incomplete Session</div> This participant has not finished all 3 conditions (A, B, and C). Comparative analysis is unavailable.'}
                 </div>
-                <div style="background:rgba(255,255,255,0.03); border-left:3px solid var(--gold); padding:1rem; border-radius:4px; font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">
-                  ${escHtml(reason)}
+                <button class="btn btn-primary" onclick="runComparativeAudit('${pid}')" style="padding:0.7rem 1.5rem;" ${!isComplete ? 'disabled style="opacity:0.4; cursor:not-allowed; background:var(--text-muted);"' : ''}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  ${isComplete ? 'Run Audit' : 'Audit Locked'}
+                </button>
+                <p style="font-size:0.75rem; color:var(--text-muted); max-width:400px; margin:0 auto; font-style:italic;">Each condition must have recorded messages before a side-by-side audit can be performed.</p>
+              </div>`;
+            
+            document.getElementById('jlMain').innerHTML = `
+              <div class="cl-header-bar">
+                <div class="cl-header-pid">${pid}</div>
+                <div class="cl-header-topic">${escHtml(p.topic || '')}</div>
+              </div>
+              <div class="cl-tabs">${tabs}</div>
+              <div style="flex:1; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column;">${fallbackContent}</div>`;
+            return;
+          }
+
+            // NLP Comparative Integration
+            let nlpComparison = '';
+            const hasMetrics = ['A', 'B', 'C'].every(c => p.conditions[c]?.argQualityMetrics); // Only show if all 3 exist for fair comparison
+            if (hasMetrics) {
+              // Calculate mathematical winner
+              const totals = {};
+              ['A', 'B', 'C'].forEach(c => {
+                const m = p.conditions[c].argQualityMetrics;
+                // Formula: Diversity + Relevance + (1-Repetition)
+                totals[c] = (m.argumentDiversity || 0) + (m.topicalRelevance || 0) + (1 - (m.repetitionRate || 0));
+              });
+              
+              let nlpWinner = 'A';
+              if (totals.B > totals.A && totals.B >= totals.C) nlpWinner = 'B';
+              else if (totals.C > totals.A && totals.C > totals.B) nlpWinner = 'C';
+              else if (totals.A === totals.B && totals.A === totals.C) nlpWinner = 'Tie';
+
+              const cols = ['A', 'B', 'C'].map(c => {
+                const m = p.conditions[c]?.argQualityMetrics || {};
+                const label = c === 'A' ? 'Baseline' : (c === 'B' ? 'Prompted' : 'Fine-tuned');
+                const isWinner = nlpWinner === c;
+                return `
+                  <div style="flex:1; background:rgba(0,0,0,0.2); padding:1.25rem; border-radius:8px; border-top:3px solid var(--cc-${c.toLowerCase()}); position:relative; ${isWinner ? 'border:1px solid var(--gold); background:rgba(201,168,76,0.05);' : ''}">
+                    ${isWinner ? `<div style="position:absolute; top:-10px; right:10px; background:var(--gold); color:black; font-size:0.6rem; font-weight:800; padding:2px 8px; border-radius:10px; text-transform:uppercase; letter-spacing:0.05em; box-shadow:0 2px 8px rgba(0,0,0,0.3);">NLP Winner</div>` : ''}
+                    <div style="font-size:0.65rem; text-transform:uppercase; font-weight:800; color:var(--text-muted); margin-bottom:1rem; letter-spacing:0.05em;">AI Partner ${c} (${label}) ${isWinner ? '🏆' : ''}</div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.6rem; color:var(--text-secondary);">
+                      <span>Diversity</span>
+                      <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">${Math.round((m.argumentDiversity || 0) * 100)}/100</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.6rem; color:var(--text-secondary);">
+                      <span>Relevance</span>
+                      <span style="font-weight:700; color:var(--gold); font-family:var(--font-mono);">${Math.round((m.topicalRelevance || 0) * 100)}/100</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-secondary);">
+                      <span>Repetition</span>
+                      <span style="font-weight:700; color:${(m.repetitionRate || 0) < 0.15 ? '#4ade80' : ((m.repetitionRate || 0) < 0.3 ? 'var(--gold)' : '#ff6b6b')}; font-family:var(--font-mono);">${Math.round((m.repetitionRate || 0) * 100)}/100</span>
+                    </div>
+                  </div>`;
+              }).join('');
+
+              nlpComparison = `
+                <div class="sl-card" style="margin-top:2.5rem; padding:1.5rem; background:rgba(255,255,255,0.01);">
+                  <div style="font-size:0.75rem; text-transform:uppercase; font-weight:800; color:var(--text-muted); margin-bottom:1.5rem; letter-spacing:0.1em; display:flex; align-items:center; gap:0.6rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Comparative NLP Analysis Ratings
+                  </div>
+                  <div style="display:flex; gap:1.25rem;">
+                    ${cols}
+                  </div>
+                </div>`;
+            }
+
+            content = `
+              <div style="padding: 1.5rem;">
+                ${rankGrid}
+                ${nlpComparison}
+                <div style="text-align:center; margin-top:2rem;">
+                  <button class="btn btn-secondary" onclick="runComparativeAudit('${pid}')" style="font-size:0.75rem; padding:0.4rem 1rem; opacity:0.6;" ${!isComplete ? 'disabled style="opacity:0.2;"' : ''}>
+                    Re-run Audit
+                  </button>
                 </div>
               </div>`;
-          }).join('');
-
-          content = `
-            <div style="padding: 1.5rem;">
-              <div style="background:rgba(201,168,76,0.1); border:1px solid rgba(201,168,76,0.2); border-radius:8px; padding:1.25rem; margin-bottom:1.5rem;">
-                 <div style="font-size:0.65rem; color:var(--gold); text-transform:uppercase; letter-spacing:0.05em; font-weight:700; margin-bottom:0.5rem;">Executive Summary</div>
-                 <div style="font-size:0.92rem; color:var(--text-primary); line-height:1.6; font-style:italic;">"${escHtml(audit.comparativeSummary)}"</div>
-              </div>
-              ${rankGrid}
-              <div style="text-align:center; margin-top:1rem;">
-                <button class="btn btn-secondary" onclick="runComparativeAudit('${pid}')" style="font-size:0.75rem; padding:0.4rem 1rem; opacity:0.6;">
-                  Re-run Audit
-                </button>
-              </div>
-            </div>`;
         }
       } else {
         const session = p.conditions[cond];
@@ -1989,6 +2169,37 @@
               </div>`;
           }).join('');
 
+          // NLP Metrics Integration
+          let nlpCard = '';
+          if (session.argQualityMetrics) {
+            const m = session.argQualityMetrics;
+            const wordCount = (session.messages || [])
+              .filter(msg => msg.role === 'assistant')
+              .reduce((acc, msg) => acc + (msg.content.split(/\s+/).length), 0);
+            
+            nlpCard = `
+              <div class="sl-card" style="margin-top:2.5rem; border:1px solid rgba(255,255,255,0.04); background:rgba(0,0,0,0.15); display:flex; flex-direction:column; align-items:center; text-align:center; width:fit-content; min-width:280px; margin-left:auto; margin-right:auto; padding:1.25rem 2rem;">
+                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); font-weight:800; margin-bottom:1.25rem; display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  NLP Analysis Ratings (Condition ${cond})
+                </div>
+                <div style="width:100%; max-width:220px;">
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.75rem; color:var(--text-secondary);">
+                    <span style="text-align:left;">Diversity</span>
+                    <span style="font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">${Math.round((m.argumentDiversity || 0) * 100)}/100</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.75rem; color:var(--text-secondary);">
+                    <span style="text-align:left;">Relevance</span>
+                    <span style="font-weight:700; color:var(--gold); font-family:var(--font-mono);">${Math.round((m.topicalRelevance || 0) * 100)}/100</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-secondary);">
+                    <span style="text-align:left;">Repetition</span>
+                    <span style="font-weight:700; color:${(m.repetitionRate || 0) < 0.15 ? '#4ade80' : ((m.repetitionRate || 0) < 0.3 ? 'var(--gold)' : '#ff6b6b')}; font-family:var(--font-mono);">${Math.round((m.repetitionRate || 0) * 100)}/100</span>
+                  </div>
+                </div>
+              </div>`;
+          }
+
           content = `
             <div style="padding: 1.5rem;">
               <div style="display:flex; justify-content:flex-end; margin-bottom:1rem;">
@@ -1997,6 +2208,7 @@
                 </button>
               </div>
               ${grid}
+              ${nlpCard}
             </div>`;
         }
       }
@@ -2016,6 +2228,38 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+    }
+
+    function cleanAiResponse(text, condition) {
+      if (!text) return text;
+      let cleaned = text;
+      if (condition === 'B') {
+        cleaned = cleaned.replace(/([^\n])\n([^\n])/g, '$1\n\n$2');
+        cleaned = cleaned.replace(/([.!?])\s+(Moreover|Furthermore|Additionally|Secondly|In addition)/g, '$1\n\n$2');
+      }
+      if (condition === 'C') {
+        cleaned = cleaned.replace(/^(\d+\.)\s+(\d+\.)/gm, '$2');
+        cleaned = cleaned.replace(/([.)!?])\s+(\d+\.)/g, '$1\n\n$2');
+        cleaned = cleaned.replace(/([^\n])\n(\d+\.)/g, '$1\n\n$2');
+        cleaned = cleaned.replace(/\((\s*[^)]*?\d{4}[^)]*?\s*)\)/g, '**($1)**');
+        cleaned = cleaned.replace(/^(\d+\.\s+)([^:*]+)([:])/gm, '**$1$2**$3');
+        cleaned = cleaned.replace(/^(\d+\.\s+)([A-Z][^.\n]{2,40})(?!\*\*)/gm, '**$1$2**');
+        cleaned = cleaned.replace(/\*\*\*\*+/g, '**');
+        cleaned = cleaned.replace(/^(.+?)\n\n(\d+\.)/m, '$1\n\n\n\n$2');
+        const lines = cleaned.split('\n');
+        let lastPt = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (/^\d+\./.test(lines[i].trim())) lastPt = i;
+        }
+        if (lastPt !== -1 && lastPt < lines.length - 1) {
+          const nextLine = lines[lastPt+1].trim();
+          if (nextLine !== '' && !/^\d+\./.test(nextLine)) {
+            lines.splice(lastPt+1, 0, '');
+            cleaned = lines.join('\n');
+          }
+        }
+      }
+      return cleaned;
     }
 
     if (adminToken) loadData();

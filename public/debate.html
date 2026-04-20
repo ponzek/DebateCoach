@@ -1023,12 +1023,12 @@
         document.getElementById('streaming-msg')?.removeAttribute('id');
         document.getElementById('streaming-bubble')?.removeAttribute('id');
 
-        let finalAiText = aiText;
+        let finalAiText = aiText.trim();
 
         if (exchanges === 3) {
-          finalAiText = aiText + `\n\nBy the way, after you send your next prompt, the message I send you after will be the end of the exchanges for this round!`;
+          finalAiText += ` By the way, after you send your next prompt, the message I send you after will be the end of the exchanges for this round!`;
         } else if (exchanges === 4) {
-          finalAiText = aiText + `\n\nThat wraps up our exchanges for this round! Click the button below to continue.`;
+          finalAiText += ` That wraps up our exchanges for this round! Click the button below to continue.`;
         }
 
         bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));

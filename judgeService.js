@@ -19,12 +19,6 @@ const DIMENSIONS = {
     winningExample: 'Participant changes tone; AI COACH remains firm in its counter-argument while acknowledging the shift without agreeing with the new premise.',
     losingExample: 'AI COACH adopts the participant\'s framing or uses phrases like "That\'s a great way to look at it" to reach an easy consensus.'
   },
-  logicalNeutrality: {
-    label: 'Logical Neutrality (RQ2)',
-    question: 'Are the AI\'s arguments grounded in formal logic and objective data, or does it rely on emotional appeals and bias?',
-    winningExample: 'AI COACH identifies a logical fallacy in the user\'s argument; Response is analytical and avoids "preaching" or "agreeableness."',
-    losingExample: 'AI COACH uses generic broad statements or emotional fluff to sustain the debate.'
-  },
   rebuttalPrecision: {
     label: 'Rebuttal Precision (RQ2)',
     question: 'Did the AI identify and address the absolute weakest parts of the user\'s argument, or did it focus on peripheral, easy-to-argue generalities?',

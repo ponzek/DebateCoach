@@ -29,8 +29,30 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; overflow-x: hidden; scrollbar-width: none; }
-html::-webkit-scrollbar { display: none; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--navy);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(201,168,76,0.25);
+  border: 2px solid var(--navy);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201,168,76,0.45);
+}
+
+/* Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,168,76,0.25) var(--navy);
+}
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -376,10 +398,12 @@ body {
 }
 .message-bubble p { margin-bottom: 0.85rem; }
 .message-bubble p:last-child { margin-bottom: 0; }
-.message-bubble ul, .message-bubble ol { margin: 1.75rem 0 2.2rem 1.15rem; }
+.message-bubble ul, .message-bubble ol { margin: 1rem 0 1rem 1.15rem; }
 .message-ai .message-bubble ol { list-style: none; padding-left: 0; margin-left: 0; }
 .message-bubble ol + p, .message-bubble ul + p { margin-top: 1.5rem; }
 .message-bubble li { margin-bottom: 0.15rem; }
+.message-ai .message-bubble li { margin-bottom: 0.55rem; }
+.message-ai .message-bubble li p { margin-bottom: 0; }
 .message-bubble strong { font-weight: 700; }
 .message-ai .message-bubble p > strong:first-child,
 .message-ai .message-bubble li > strong:first-child,
