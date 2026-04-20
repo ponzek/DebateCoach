@@ -45,7 +45,17 @@
       outline: none;
     }
     .login-box input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.12); }
-    .login-error { color: #e05c5c; font-size: 0.8rem; margin-bottom: 0.75rem; display: none; }
+    .login-error { color: #e05c5c; font-size: 0.85rem; margin-top: 0.6rem; margin-bottom: 0; display: none; background: rgba(224,92,92,0.1); border: 1px solid rgba(224,92,92,0.3); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      15%      { transform: translateX(-8px); }
+      30%      { transform: translateX(8px); }
+      45%      { transform: translateX(-6px); }
+      60%      { transform: translateX(6px); }
+      75%      { transform: translateX(-3px); }
+      90%      { transform: translateX(3px); }
+    }
+    .login-box.shake { animation: shake 0.55s ease; }
 
     /* ── View toggle ── */
     .view-toggle {
@@ -468,7 +478,7 @@
         </button>
       </div>
       <div class="login-error" id="loginError">Invalid username or password.</div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.25rem;" onclick="attemptLogin()">Sign In</button>
+      <button id="loginSignInBtn" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.25rem;" onclick="attemptLogin()">Sign In</button>
       <a href="/" class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:0.6rem;font-size:0.8rem;opacity:0.7;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.4rem;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Back to Home
@@ -604,12 +614,7 @@
         </div>
       </div>
 
-      <!-- Recruitment progress -->
-      <div class="target-bar-wrap">
-        <div class="target-bar-label">Recruitment Target</div>
-        <div class="target-bar-track"><div class="target-bar-fill" id="targetFill"></div></div>
-        <div class="target-bar-count" id="targetCount">0 / 25 complete</div>
-      </div>
+
 
       <!-- Condition Performance Summary Table -->
       <div class="summary-wrap">
@@ -749,30 +754,54 @@
     // ── Admin Auth ──
     let adminToken = sessionStorage.getItem('adminToken') || null;
 
+    let passIsVisible = false;
     function togglePassVis() {
       const input = document.getElementById('loginPass');
       const icon = document.getElementById('eyeIcon');
-      if (input.type === 'password') {
+      passIsVisible = !passIsVisible;
+      
+      if (passIsVisible) {
         input.type = 'text';
-        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
       } else {
         input.type = 'password';
         icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
       }
     }
 
-    function attemptLogin() {
-      const user = document.getElementById('loginUser').value.trim();
-      const pass = document.getElementById('loginPass').value;
+    function showLoginError(msg) {
       const errEl = document.getElementById('loginError');
+      const btn = document.getElementById('loginSignInBtn');
+      const box = document.querySelector('.login-box');
+      errEl.textContent = msg || 'Invalid username or password.';
+      errEl.style.display = 'block';
+      box.classList.remove('shake');
+      void box.offsetWidth; 
+      box.classList.add('shake');
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+
+    function attemptLogin() {
+      var user = document.getElementById('loginUser').value.trim();
+      var pass = document.getElementById('loginPass').value;
+      var errEl = document.getElementById('loginError');
+      var btn = document.getElementById('loginSignInBtn');
       errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
 
       fetch('/api/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: user, password: pass })
       })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) {
+          return r.json().then(data => { throw new Error(data.error || 'Failed'); });
+        }
+        return r.json();
+      })
       .then(data => {
         if (data.token) {
           adminToken = data.token;
@@ -780,10 +809,12 @@
           document.getElementById('loginOverlay').classList.add('hidden');
           loadData();
         } else {
-          errEl.style.display = 'block';
+          showLoginError();
         }
       })
-      .catch(() => { errEl.style.display = 'block'; });
+      .catch(err => { 
+        showLoginError(err.message === 'Failed' ? null : err.message); 
+      });
     }
 
     // Allow Enter key to submit login
@@ -1207,12 +1238,9 @@
           document.getElementById('statOptimalDesc').textContent = `Outperforming others by +${lead}%`;
         }
       }
-
-      // 5. Target Bar (keep for motivation)
-      const pct = Math.min(Math.round((fullyCompletePids.length / TARGET_N) * 100), 100);
-      document.getElementById('targetFill').style.width = pct + '%';
-      document.getElementById('targetCount').textContent = `${fullyCompletePids.length} / ${TARGET_N} complete (${pct}%)`;
     }
+
+
 
     const JUDGE_METRICS_KEYS = ['sycophancyResistance', 'rebuttalPrecision', 'cognitiveFriction'];
 

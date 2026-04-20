@@ -175,8 +175,8 @@
       <div class="dev-section">
         <div class="dev-header">System</div>
         <a href="/complete.html">✅ Completion Page</a>
-        <a href="/admin.html">🔐 Admin Login (Logout & Go)</a>
-        <button onclick="localStorage.clear(); location.reload();" style="color:#e05c5c; background:rgba(224,92,92,0.1);">🧹 Reset Study (Clear Data)</button>
+        <button onclick="sessionStorage.removeItem('adminToken'); window.location.href='/admin.html';">🔐 Admin Login (Logout & Go)</button>
+        <button onclick="localStorage.clear(); sessionStorage.clear(); location.reload();" style="color:#e05c5c; background:rgba(224,92,92,0.1);">🧹 Reset Study (Clear Data)</button>
       </div>
     </div>
     <div id="dev-tools-toggle" title="Developer Tools">🛠️</div>
