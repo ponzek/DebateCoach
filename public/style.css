@@ -375,6 +375,7 @@ body {
 .message-bubble p { margin-bottom: 0.25rem; }
 .message-bubble p:last-child { margin-bottom: 0; }
 .message-bubble ul, .message-bubble ol { margin: 1.75rem 0 2.2rem 1.15rem; }
+.message-ai .message-bubble ol { list-style: none; padding-left: 0; margin-left: 0; }
 .message-bubble ol + p, .message-bubble ul + p { margin-top: 1.5rem; }
 .message-bubble li { margin-bottom: 0.15rem; }
 .message-bubble strong { font-weight: 700; }

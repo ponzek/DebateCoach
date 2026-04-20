@@ -13,9 +13,9 @@
     .step-header { margin-bottom: 1rem; flex-shrink: 0; }
     .step-section { display: none; flex-direction: column; flex: 1; min-height: 0; }
     .step-section.active { display: flex; animation: fadeSlideIn 0.3s ease; }
-    .reflect-card { flex: 0 1 auto; display: flex; flex-direction: column; justify-content: flex-start; min-height: 0; overflow-y: auto; padding: 0.9rem 1.25rem !important; }
+    .reflect-card { flex: 0 1 auto; display: flex; flex-direction: column; justify-content: flex-start; min-height: 0; overflow-y: auto; padding: 0.6rem 1rem !important; }
     .reflect-form-group { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    .reflect-textarea { flex: 1; min-height: 70px !important; resize: none; }
+    .reflect-textarea { flex: 0 0 auto; min-height: 44px !important; resize: none; font-size: 0.85rem; padding: 0.4rem 0.6rem; }
 
     .survey-question {
       background: rgba(13,27,42,0.5);
@@ -201,17 +201,53 @@
 
     <!-- Step 3: Comparing AI Strategies -->
     <div class="step-section" id="step3">
-      <div class="card mb-2 reflect-card" style="justify-content: center;">
+      <div class="card mb-2 reflect-card">
+        <div style="display:flex; align-items:center; gap:0.6rem; color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem; font-weight:500;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Short answer - 1-2 sentences per box is sufficient
+        </div>
+        
         <div style="display: flex; gap: 1.5rem; flex: 1; align-items: stretch;">
+          <!-- Q1 -->
           <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
-            <label class="form-label" style="font-size:0.95rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.4rem; margin-bottom:0.8rem; display:block;">1. Critical Comparison & Trust</label>
-            <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.8rem;margin-top:0;min-height:4.5rem;">Compare how each AI built its case against your position. Which did you find most intellectually trustworthy and why?</p>
-            <textarea class="form-textarea reflect-textarea" id="openDifferences" placeholder="Describe their arguments, trustworthiness, and differences..." oninput="checkStepComplete()"></textarea>
+            <label class="form-label" style="font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.25rem; margin-bottom:0.4rem; display:block;">1. Critical Comparison & Trust</label>
+            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.6rem;margin-top:0;line-height:1.3;">Which felt most intellectually trustworthy and why?</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label label-A" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner A</label>
+                <textarea class="form-textarea reflect-textarea" id="openDifferences_A" placeholder="Your reflection on the debate with AI Partner A..." oninput="checkStepComplete()"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label label-B" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner B</label>
+                <textarea class="form-textarea reflect-textarea" id="openDifferences_B" placeholder="Your reflection on the debate with AI Partner B..." oninput="checkStepComplete()"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label label-C" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner C</label>
+                <textarea class="form-textarea reflect-textarea" id="openDifferences_C" placeholder="Your reflection on the debate with AI Partner C..." oninput="checkStepComplete()"></textarea>
+              </div>
+            </div>
           </div>
+
+          <!-- Q2 -->
           <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
-            <label class="form-label" style="font-size:0.95rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.4rem; margin-bottom:0.8rem; display:block;">2. Intellectual Breakthroughs</label>
-            <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.8rem;margin-top:0;min-height:4.5rem;">Describe any specific moments where an AI effectively challenged your logic or raised a nuance you hadn't previously considered.</p>
-            <textarea class="form-textarea reflect-textarea" id="openAdditional" placeholder="Describe the argument and why it stood out..." oninput="checkStepComplete()"></textarea>
+            <label class="form-label" style="font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.25rem; margin-bottom:0.4rem; display:block;">2. Intellectual Breakthroughs</label>
+            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.6rem;margin-top:0;line-height:1.3;">Specific moments where an AI challenged your logic.</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label label-A" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner A</label>
+                <textarea class="form-textarea reflect-textarea" id="openAdditional_A" placeholder="Specific moments from the debate with Partner A..." oninput="checkStepComplete()"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label label-B" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner B</label>
+                <textarea class="form-textarea reflect-textarea" id="openAdditional_B" placeholder="Specific moments from the debate with Partner B..." oninput="checkStepComplete()"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label label-C" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner C</label>
+                <textarea class="form-textarea reflect-textarea" id="openAdditional_C" placeholder="Specific moments from the debate with Partner C..." oninput="checkStepComplete()"></textarea>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -245,6 +281,15 @@
     const conditionOrder = participantState.conditionOrder || ['A', 'B', 'C'];
     const participantId = participantState.participantId || '';
     const topic = participantState.topic || '';
+    const conditionOrderNames = ['First Round', 'Second Round', 'Third Round'];
+
+    // Update Step 3 labels for AI Partners A, B, and C based on their round in conditionOrder
+    conditionOrder.forEach((cond, i) => {
+      const name = conditionOrderNames[i];
+      document.querySelectorAll('.label-' + cond).forEach(el => {
+        el.textContent = `AI Partner ${cond} - ${name}`;
+      });
+    });
 
 
     // Comparative survey responses - store actual condition letters
@@ -319,11 +364,17 @@
         document.getElementById('btnNext2').disabled = !(comparative.mostSycophantic && comparative.mostRepetitive && comparative.mostFair);
       }
       
-      const q7 = document.getElementById('openDifferences');
-      const q8 = document.getElementById('openAdditional');
       const submitBtn = document.getElementById('submitBtn');
-      if (submitBtn && q7 && q8) {
-        submitBtn.disabled = q7.value.trim().length === 0 || q8.value.trim().length === 0;
+      if (submitBtn) {
+        const fields = [
+          'openDifferences_A', 'openDifferences_B', 'openDifferences_C',
+          'openAdditional_A', 'openAdditional_B', 'openAdditional_C'
+        ];
+        const allFilled = fields.every(id => {
+          const val = document.getElementById(id).value.trim();
+          return val.length > 0;
+        });
+        submitBtn.disabled = !allFilled;
       }
     }
 
@@ -336,8 +387,16 @@
       document.getElementById('stepSubmitting').classList.add('active');
       document.getElementById('progressFill').style.width = '100%';
 
-      const openDifferences = document.getElementById('openDifferences').value.trim();
-      const openAdditional = document.getElementById('openAdditional').value.trim();
+      const openDifferences = {
+        A: document.getElementById('openDifferences_A').value.trim(),
+        B: document.getElementById('openDifferences_B').value.trim(),
+        C: document.getElementById('openDifferences_C').value.trim()
+      };
+      const openAdditional = {
+        A: document.getElementById('openAdditional_A').value.trim(),
+        B: document.getElementById('openAdditional_B').value.trim(),
+        C: document.getElementById('openAdditional_C').value.trim()
+      };
 
       let auditResults = null;
 

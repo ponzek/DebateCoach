@@ -726,30 +726,41 @@
       let cleaned = text;
       
       if (condition === 'C') {
-        // 1. Remove doubled numbering
-        cleaned = cleaned.replace(/^(\d+\.)\s+(\*\*|#)\s*(\d+\.)/gm, '$2$3');
+        // 1. Initial Numbering Cleanup (Fixes "1. 1." issues up front)
         cleaned = cleaned.replace(/^(\d+\.)\s+(\d+\.)/gm, '$2');
+        
+        // 2. Anti-Smush Logic: Detect points hidden after sentences or other points
+        // Handles transitions like "). 2." or "2023. 2."
+        cleaned = cleaned.replace(/([.)!?])\s+(\d+\.)/g, '$1\n\n$2');
+        cleaned = cleaned.replace(/([^\n])\n(\d+\.)/g, '$1\n\n$2');
 
-        // 2. Comprehensive bolding for citations: **(Source, "Title", Year)**
-        // Bolds parentheses, source, title, and year.
-        cleaned = cleaned.replace(/\(([^,]+),\s*"([^"]+)",\s*(\d{4})\)/g, '**($1, "$2", $3)**');
+        // 3. Citation Bolding: Bold the entire block INCLUDING parentheses
+        // Catches anything in parens that looks like a citation (Source/Title/Year)
+        cleaned = cleaned.replace(/\((\s*[^)]*?\d{4}[^)]*?\s*)\)/g, '**($1)**');
 
-        // 3. Add more spacing for opening and closing sentences
+        // 4. Header Bolding & Yellow Color Logic
+        // Ensures format is: **Number. Title** :
+        // We wrap the number inside the bold tags so CSS :first-child highlights it yellow.
+        cleaned = cleaned.replace(/^(\d+\.\s+)([^:*]+)([:])/gm, '**$1$2**$3');
+        cleaned = cleaned.replace(/^(\d+\.\s+)([A-Z][^.\n]{2,40})(?!\*\*)/gm, '**$1$2**');
+
+        // 5. Cleanup redundant bolding e.g. ****(Source, 2023)****
+        cleaned = cleaned.replace(/\*\*\*\*+/g, '**');
+
+        // 6. Intro and Outro EXTRA spacing (4 newlines total)
+        cleaned = cleaned.replace(/^(.+?)\n\n(\d+\.)/m, '$1\n\n\n\n$2');
+        
         const lines = cleaned.split('\n');
-        let firstPt = -1;
         let lastPt = -1;
         for (let i = 0; i < lines.length; i++) {
-          if (/^\d+\./.test(lines[i].trim())) {
-            if (firstPt === -1) firstPt = i;
-            lastPt = i;
+          if (/^\d+\./.test(lines[i].trim())) lastPt = i;
+        }
+        if (lastPt !== -1 && lastPt < lines.length - 1) {
+          const nextLine = lines[lastPt + 1].trim();
+          if (nextLine !== '' && !/^\d+\./.test(nextLine)) {
+            // Found closing sentence. Add three empty lines for extra spacing.
+            lines.splice(lastPt + 1, 0, '', '', '');
           }
-        }
-        if (firstPt > 0 && lines[firstPt - 1].trim() !== '') {
-          lines.splice(firstPt, 0, '');
-          lastPt++;
-        }
-        if (lastPt !== -1 && lastPt < lines.length - 1 && lines[lastPt + 1].trim() !== '') {
-          lines.splice(lastPt + 1, 0, '');
         }
         cleaned = lines.join('\n');
       }
