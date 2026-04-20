@@ -391,26 +391,49 @@ body {
 .message-bubble { 
   font-size: 0.92rem;
   line-height: 1.6;
-  white-space: pre-wrap;
   word-break: break-word;
-  padding: 1.25rem 1.45rem;
+  padding: 0.7rem 1.45rem;
   border-radius: 18px;
 }
 .message-bubble p { margin-bottom: 0.85rem; }
-.message-bubble p:last-child { margin-bottom: 0; }
+.message-bubble p:last-child { margin-bottom: 0 !important; }
+.message-user .message-bubble { white-space: pre-wrap; }
 .message-bubble ul, .message-bubble ol { margin: 1rem 0 1rem 1.15rem; }
 .message-ai .message-bubble ol { list-style: none; padding-left: 0; margin-left: 0; }
 .message-bubble ol + p, .message-bubble ul + p { margin-top: 1.5rem; }
 .message-bubble li { margin-bottom: 0.15rem; }
 .message-ai .message-bubble li { margin-bottom: 0.55rem; }
-.message-ai .message-bubble li p { margin-bottom: 0; }
+.message-ai .message-bubble.condition-c { 
+  line-height: 1.4; 
+  padding-bottom: 0.25rem;
+}
+.message-ai .message-bubble.condition-c p:last-child { margin-bottom: 0; }
+.message-ai .message-bubble.condition-c p { margin-bottom: 0.85rem; }
+.message-ai .message-bubble.condition-c li { margin-bottom: 0; }
+.message-ai .message-bubble.condition-c ol { margin-top: 1rem; margin-bottom: 1rem; }
+.message-ai .message-bubble.condition-c ol + p,
+.message-ai .message-bubble.condition-c ul + p { margin-top: 0.5rem; }
+.message-ai .message-bubble.condition-c li p { margin-bottom: 0; }
+.message-ai .message-bubble.condition-c > p:first-child { margin-bottom: 0.15rem; }
+.message-ai .message-bubble.condition-c > p:last-child { margin-top: 0.5rem; }
+
+#typing-indicator .message-bubble { 
+  padding: 0.8rem 1rem; 
+  min-height: unset;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: fit-content;
+  min-width: 160px;
+}
+
 .message-bubble strong { font-weight: 700; }
 .message-ai .message-bubble p > strong:first-child,
 .message-ai .message-bubble li > strong:first-child,
 .message-ai .message-bubble li > b:first-child {
-  color: #fed33f; /* Brighter bold yellow for titles */
+  color: #fed33f;
   font-size: 1rem;
-  display: inline; /* Keep on same line for efficiency */
+  display: inline;
   margin-right: 0.3rem;
 }
 .message-user .message-bubble {
@@ -438,7 +461,8 @@ body {
   display: flex;
   gap: 4px;
   align-items: center;
-  padding: 0.5rem 0;
+  justify-content: center;
+  padding: 0;
 }
 .typing-dot {
   width: 7px;
@@ -455,10 +479,12 @@ body {
   40% { transform: scale(1.3); opacity: 1; }
 }
 .typing-status {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   font-style: italic;
-  margin-top: 4px;
+  margin-top: 24px;
+  line-height: 1.1;
+  text-align: center;
 }
 
 /* ── Counterargument cards ── */

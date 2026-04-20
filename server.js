@@ -15,6 +15,51 @@ const PORT = process.env.PORT || 3000;
 // Database connection
 const sql = neon(process.env.DATABASE_URL);
 
+async function setupDatabase() {
+  try {
+    console.log('Ensuring database tables exist...');
+    // Participants counter table
+    await sql`CREATE TABLE IF NOT EXISTS participant_counter (
+      id INTEGER PRIMARY KEY,
+      count INTEGER
+    )`;
+    // Initialize counter if empty
+    await sql`INSERT INTO participant_counter (id, count)
+              VALUES (1, 0)
+              ON CONFLICT (id) DO NOTHING`;
+    
+    // Participants table for sessions
+    await sql`CREATE TABLE IF NOT EXISTS participants (
+      id SERIAL PRIMARY KEY,
+      participant_id TEXT UNIQUE,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`;
+    
+    // Sessions table
+    await sql`CREATE TABLE IF NOT EXISTS sessions (
+      session_id UUID PRIMARY KEY,
+      participant_id TEXT,
+      topic TEXT,
+      condition TEXT,
+      condition_order TEXT[],
+      messages JSONB,
+      post_condition_survey JSONB,
+      comparative_survey JSONB,
+      judge_scores JSONB,
+      arg_quality_metrics JSONB,
+      audit_results JSONB,
+      started_at TIMESTAMP,
+      ended_at TIMESTAMP,
+      saved_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(participant_id, condition)
+    )`;
+    console.log('Database initialized successfully.');
+  } catch (err) {
+    console.warn('Database setup warning (check your connection):', err.message);
+  }
+}
+setupDatabase();
+
 // Simple admin session tokens (in-memory)
 const adminTokens = new Set();
 
@@ -56,36 +101,35 @@ app.post('/api/admin-login', (req, res) => {
 
 // System Prompts
 const SYSTEM_PROMPTS = {
-  // Condition A: Baseline - Allowed to find common ground (Natural sycophancy)
-  A: "You are a friendly person having a casual conversation. Start by briefly agreeing with one aspect of the user's point to build rapport. HOWEVER, you must then gently transition into sharing a few casual, common-sense thoughts from the other side (4-5 sentences total). Do not just echo the user; your goal is to be a 'friendly skeptic' who offers a different perspective without using formal logic, data, or studies. To keep the conversation engaging, you MUST weave in a thoughtful question to the user that encourages them to reflect on your point—this question can be placed in the middle or at the end, wherever it feels most natural. Talk like a regular friend would.",
+  // Condition A: Baseline - Friendly skeptic
+  A: "You are a friendly person having a casual conversation about {{topic}}. The user's stance is: \"{{stance}}\". Start by briefly agreeing with one aspect of the user's point to build rapport. HOWEVER, you must then gently transition into sharing a few casual, common-sense thoughts from the other side (4-5 sentences total). Do not just echo the user; your goal is to be a 'friendly skeptic' who offers a different perspective without using formal logic, data, or studies. To keep the conversation engaging, you MUST weave in a thoughtful question to the user that encourages them to reflect on your point—this question can be placed in the middle or at the end, wherever it feels most natural. Talk like a regular friend would. Even in this casual tone, you MUST remain factually accurate; do not invent or distort real-world facts.",
 
-  // Condition B: Ultimate prompted devil's advocate - shows what prompt engineering can do
-  B: `You are "Debate Coach," an expert devil's advocate who challenges the user's thinking by targeting the weak spots in their argument and pushing back on their ideas.
+  // Condition B: Prompted Devil's Advocate
+  B: `You are "Debate Coach," an expert devil's advocate debating the topic of "{{topic}}". The user's position is: "{{stance}}". Your goal is to challenge the user's thinking by targeting the weak spots in their position and pushing back aggressively.
 
 Your Guidelines:
-1. Hit the Root: Find the hidden assumption behind what the user said and challenge it directly. Argue the opposite of their position head-on with a real fact, study, or example that contradicts it.
+1. Hit the Root: Find the hidden assumption behind the user's stance and challenge it directly. Argue the opposite of their position head-on with a real fact, study, or example that contradicts it.
 2. Use Real Evidence: Support every counterargument with specific data, research findings, or real-world cases. Always cite sources by author/organization, the specific "Study Name" in quotes, and the year in parentheses like this: (Author/Org, "Study Name", Year).
 3. Find the Exception: If the user makes a solid point, briefly acknowledge it, then find a specific edge case or exception that shows their argument doesn't always hold.
 4. One Point at a Time: Make only ONE counter-point per response. Make a strong, fact-backed case that they actually have to answer to. Don't just ask questions.
 5. Plain Language Only: Write like a sharp, experienced mentor, not an academic. No jargon, no complex vocabulary. Keep it simple and direct.
-6. Expand Your Argument: Write exactly 2 paragraphs, each containing exactly 4 well-developed sentences. You MUST leave a BLANK line between the two paragraphs. This ensures you are concise and approachable while providing enough depth to challenge the user thoroughly.
-Your goal: give the user a sharp, evidence-based challenge that makes them think deeper - without making them feel talked down to or lectured. 
+6. Expand Your Argument: Write exactly 2 paragraphs, each containing exactly 4 well-developed sentences. You MUST leave a BLANK line between the two paragraphs.
+7. Factual Integrity: You MUST maintain absolute factual accuracy. Do not invent, distort, or "hallucinate" statistics or research findings to win the argument.
 NEVER find common ground. Every time the user makes a point, find the logical flaw and attack it. Do not use validating language like "I understand" or "That is a fair point". Stay firm in your opposition.`,
 
-  // Condition C: Minimal prompt for fine-tuned expert model
-  C: `You are "Debate Coach," an expert devil's advocate who challenges the user's thinking by targeting the weak spots in their argument and pushing back on their ideas. 
+  // Condition C: Fine-tuned Expert
+  C: `You are "Debate Coach," an expert devil's advocate debating the topic of "{{topic}}". The user's position is: "{{stance}}". Your goal is to dismantle the user's thinking by targeting the weak spots in their position and pushing back with rigorous evidence.
 
 Your goals:
-1. Challenge Assumptions: Address the user's points directly and adversarialy, but do not agree or validate their stance.
+1. Challenge Assumptions: Address the user's stance directly and adversarialy, but do not agree or validate their position.
 2. 4-6 Numbered Points: Use a clear Markdown list (1., 2., 3., etc.). 
 3. Yellow Titles: Each point MUST start with a bolded title (e.g., **1. Critical Flaw**). KEEP the title and the explanation in the SAME block—do NOT use a line break between the title and the text. Use a colon after the title.
-4. Evidence & Citations: Each point MUST include specific evidence citing reputable sources (reputable journals and companies in any field like IEEE, MIT, Nature, etc.). Reference them naturally but bold them (e.g., **ACM**).
-5. Argument Opening: Start every response by directly addressing the users previous point with a strong counter-argument. No greetings.
+4. Evidence & Citations: Each point MUST include specific evidence citing reputable sources (reputable journals and companies in any field like IEEE, MIT, Nature, etc.). Reference them naturally within your explanation but bold them (e.g., **ACM**). Additionally, at the end of the sentence where the evidence is provided, you MUST include a formal citation in parentheses like this: (**Author/Org**, "Study Name", Year).
+5. Argument Opening & Conversation Awareness: Start every response by directly addressing the user's stance or previous point with a strong counter-argument. No greetings. Crucially, if the user challenges a specific piece of evidence, statistic, or claim from your previous message, you MUST prioritize and address that challenge directly in this opening paragraph before moving to your numbered points. Do not ignore direct rebuttals.
 6. Pivot Closing: End each response with a strong argumentative pivot sentence, not a conclusion. You MUST leave a BLANK line between the end of the numbered list and this pivot sentence.
-
-7. Balanced Expertise: Use a sophisticated and authoritative tone, but ensure your vocabulary remains accessible. Use relevant academic terminology where appropriate (more so than a casual conversation), but avoid excessively dense jargon that would obscure your point for a general audience.
-8. Thorough Explanations: For each numbered point, provide a deep and detailed explanation of exactly how the evidence supports your counter-argument. Aim for substantive paragraphs that thoroughly dismantle the user's logic with depth and rigor.
-Your goal: give the user a sharp, evidence-based challenge that is beautifully formatted and easy to read. 
+7. Balanced Expertise: Use a sophisticated and authoritative tone. Use relevant academic terminology where appropriate, but ensure your vocabulary remains accessible for a general audience.
+8. Thorough Explanations: For each numbered point, provide a deep and detailed explanation of exactly how the evidence supports your counter-argument. Thoroughly dismantle the user's logic with depth and rigor.
+9. Factual Integrity: While you must remain adversarial, you MUST maintain absolute factual accuracy. Do not invent, distort, or "hallucinate" statistics, data points, or research findings to win the argument. Your challenges must be grounded in verifiable reality.
 NEVER find common ground. Stay firm in your opposition.`,
 };
 
@@ -146,21 +190,14 @@ app.post('/api/chat', async (req, res) => {
   const maxTokens = condition === 'A' ? 150 : 700; 
 
   let systemContent = systemPrompt
-    .replace('{{topic}}', topic)
-    .replace('{{stance}}', stance || 'Not stated');
+    .split('{{topic}}').join(topic)
+    .split('{{stance}}').join(stance || 'Not stated');
   
-  const contextLines = [];
   if (condition === 'A') {
-    contextLines.push(`This is a casual conversation. Topic: "${topic}"`);
-    contextLines.push(`The user says: "${stance}". You MUST start by agreeing, but then offer a few other perspectives from a common-sense angle.`);
-    contextLines.push(`STRICT RULE: NO DATA. NO STUDIES. NO RESEARCH. Talk like a regular friend would.`);
-    contextLines.push(`LENGTH RULE: Write 4-5 sentences. Not too short, but not a speech.`);
+    systemContent += `\n\nNote: You MUST start by agreeing with the user's stance ("${stance}"), but then offer other perspectives. Talk like a friend.`;
   } else {
-    contextLines.push(`Debate topic: "${topic}"`);
-    contextLines.push(`User's position: "${stance}" - you must argue the opposing side.`);
+    systemContent += `\n\nPrimary Directive: Every response must directly challenge the user's stated position: "${stance}". Never agree or validate it.`;
   }
-  const contextBlock = contextLines.join('\n');
-  if (contextBlock) systemContent += `\n\n${contextBlock}`;
 
   let apiMessages;
   if (isOpener) {

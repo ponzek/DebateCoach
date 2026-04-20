@@ -18,19 +18,21 @@
     }
     .hero-title {
       font-family: 'Playfair Display', serif;
-      font-size: 1.8rem;
+      font-size: 2.6rem;
       font-weight: 700;
       line-height: 1.1;
-      margin-bottom: 0.3rem;
+      margin-bottom: 1rem;
       color: var(--text-primary);
+      letter-spacing: -0.01em;
     }
     .hero-title em { color: var(--gold); font-style: italic; }
     .hero-subtitle {
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       color: var(--text-secondary);
       max-width: 600px;
       margin: 0 auto 0.5rem;
       line-height: 1.5;
+      opacity: 0.8;
     }
 
     .setup-wrap {
@@ -47,9 +49,12 @@
     .setup-wrap > .card-gold { flex: 2.1; height: auto; display: flex; flex-direction: column; min-height: 0; padding: 1.25rem 1.75rem; }
     
     /* Global card flex for consistent inner layout */
-    .card { display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+    .card { display: flex; flex-direction: column; justify-content: center; min-height: 0; }
     .card-content-scroll {
-      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     @media (max-width: 1024px) {
       .setup-wrap {
@@ -116,8 +121,7 @@
     .topic-field-required {
       font-size: 0.72rem;
       color: var(--text-muted);
-      margin-top: 0;
-      transform: translateY(-20px);
+      margin-top: 0.25rem;
     }
 
     .limit-warning {
@@ -130,20 +134,20 @@
       display: none;
     }
 
-    /* Locked space for topic input to prevent card jitter */
+    /* Reserve space but allow growth if needed */
     .topic-reserve-space {
-      height: 95px; /* Locked height for 3 lines + counter */
+      min-height: 95px; 
       display: flex;
       flex-direction: column;
     }
     .topic-input-container {
       position: relative;
-      margin-bottom: 4px;
+      margin-bottom: 0;
     }
     .topic-field {
-      max-height: 85px; /* Exactly 3 lines */
-      min-height: 48px; /* Start at 1-2 lines */
-      overflow: hidden !important; /* No scrollbars */
+      max-height: 120px; 
+      min-height: 48px; 
+      overflow: hidden !important; 
       transition: border-color 0.2s, box-shadow 0.2s, height 0.15s ease;
       padding-bottom: 12px;
     }
@@ -264,7 +268,7 @@
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <a href="/" class="site-logo">
+      <a href="/" class="site-logo" onclick="handleLogoClick(event)">
         <div class="site-logo-icon">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="36" height="36" rx="10" fill="url(#logoGrad)"/>
@@ -293,7 +297,7 @@
   <main>
     <section class="hero">
       <h1 class="hero-title">Challenge your thinking.<br/><em>Strengthen</em> your argument.</h1>
-      <p class="hero-subtitle">Debate coach plays devils advocate to make you think more critically.<br/>You will debate the same topic with three different AI configurations.</p>
+      <p class="hero-subtitle">Debate coach plays devils advocate to make you think more critically.</p>
     </section>
 
     <div class="setup-wrap">
@@ -332,11 +336,13 @@
 
       <!-- Center: Setup form -->
       <div class="card card-gold">
+        <div style="margin-bottom:0.75rem;">
+          <p class="section-title" style="font-size:1.4rem;margin-bottom:0;">Start a Debate</p>
+        </div>
         <div class="card-content-scroll">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;flex-wrap:wrap;margin-top:0;">
             <!-- Left column: title + ID + topic -->
             <div style="flex:1;min-width:260px;">
-              <p class="section-title" style="font-size:1.15rem;margin-bottom:0.25rem;">Start a Debate</p>
               <p class="section-sub" style="margin-bottom:1.25rem;">Enter a topic and begin. Your participant ID is assigned automatically.</p>
   
               <!-- Auto-assigned participant ID -->
@@ -419,6 +425,21 @@
   </main>
 
   <script>
+    function handleLogoClick(e) {
+      e.preventDefault();
+      localStorage.removeItem('dc_participant_id');
+      localStorage.removeItem('dc_participant_state');
+      // Clear any session-specific debate data
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('debate_session_')) {
+          localStorage.removeItem(key);
+          i--;
+        }
+      }
+      window.location.href = '/';
+    }
+
     // Fetch auto-assigned participant ID on page load
     let assignedParticipantId = null;
 
@@ -432,7 +453,10 @@
       }
       try {
         const resp = await fetch('/api/next-participant-id');
-        const { participantId } = await resp.json();
+        if (!resp.ok) throw new Error('Server error');
+        const data = await resp.json();
+        if (data.error || !data.participantId) throw new Error(data.error || 'Invalid ID');
+        const { participantId } = data;
         assignedParticipantId = participantId;
         localStorage.setItem('dc_participant_id', participantId);
         document.getElementById('pidValue').textContent = participantId;
@@ -452,8 +476,7 @@
 
     function autoResizeTopic(el) {
       el.style.height = 'auto';
-      // Limit to 3 lines (~85px)
-      const newHeight = Math.min(el.scrollHeight, 85);
+      const newHeight = Math.min(el.scrollHeight, 120);
       el.style.height = newHeight + 'px';
     }
 

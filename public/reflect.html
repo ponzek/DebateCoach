@@ -101,7 +101,7 @@
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <a href="/" class="site-logo">
+      <a href="/" class="site-logo" onclick="handleLogoClick(event)">
         <div class="site-logo-icon">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
             <rect width="36" height="36" rx="10" fill="url(#lg5)"/>
@@ -210,15 +210,17 @@
         <div style="display: flex; gap: 1.5rem; flex: 1; align-items: stretch;">
           <!-- Q1 -->
           <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
-            <label class="form-label" style="font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.25rem; margin-bottom:0.4rem; display:block;">1. Argument Construction</label>
-            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.6rem;margin-top:0;line-height:1.3;">Describe how each AI built its case against your position. Did they use specific evidence, real-world examples, or general statements?</p>
+            <div style="min-height: 75px;">
+              <label class="form-label" style="font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.25rem; margin-bottom:0.4rem; display:block;">1. Argument Construction</label>
+              <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.6rem;margin-top:0;line-height:1.3;">Describe how each AI built its case against your position. Did they use specific evidence, real-world examples, or general statements?</p>
+            </div>
             
             <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-              <div class="form-group" style="margin-bottom:0;">
+              <div class="form-group" style="margin-bottom:0.3rem;">
                 <label class="form-label label-A" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner A</label>
                 <textarea class="form-textarea reflect-textarea" id="openDifferences_A" placeholder="Your reflection on the debate with AI Partner A..." oninput="checkStepComplete()"></textarea>
               </div>
-              <div class="form-group" style="margin-bottom:0;">
+              <div class="form-group" style="margin-bottom:0.3rem;">
                 <label class="form-label label-B" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner B</label>
                 <textarea class="form-textarea reflect-textarea" id="openDifferences_B" placeholder="Your reflection on the debate with AI Partner B..." oninput="checkStepComplete()"></textarea>
               </div>
@@ -231,15 +233,17 @@
 
           <!-- Q2 -->
           <div class="form-group reflect-form-group" style="margin-bottom:0; flex: 1;">
-            <label class="form-label" style="font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.25rem; margin-bottom:0.4rem; display:block;">2. Intellectual Breakthroughs</label>
-            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.6rem;margin-top:0;line-height:1.3;">Specific moments where an AI challenged your logic.</p>
+            <div style="min-height: 75px;">
+              <label class="form-label" style="font-size:0.9rem; color:var(--text-primary); border-bottom:1px solid var(--border-subtle); padding-bottom:0.25rem; margin-bottom:0.4rem; display:block;">2. Intellectual Breakthroughs</label>
+              <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.6rem;margin-top:0;line-height:1.3;">Specific moments where each AI challenged your logic.</p>
+            </div>
             
             <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-              <div class="form-group" style="margin-bottom:0;">
+              <div class="form-group" style="margin-bottom:0.3rem;">
                 <label class="form-label label-A" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner A</label>
                 <textarea class="form-textarea reflect-textarea" id="openAdditional_A" placeholder="Specific moments from the debate with Partner A..." oninput="checkStepComplete()"></textarea>
               </div>
-              <div class="form-group" style="margin-bottom:0;">
+              <div class="form-group" style="margin-bottom:0.3rem;">
                 <label class="form-label label-B" style="font-size:0.6rem; opacity:0.8; margin-bottom:0.1rem; font-weight:700;">AI Partner B</label>
                 <textarea class="form-textarea reflect-textarea" id="openAdditional_B" placeholder="Specific moments from the debate with Partner B..." oninput="checkStepComplete()"></textarea>
               </div>
@@ -272,6 +276,20 @@
   </div>
 
   <script>
+    function handleLogoClick(e) {
+      e.preventDefault();
+      localStorage.removeItem('dc_participant_id');
+      localStorage.removeItem('dc_participant_state');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('debate_session_')) {
+          localStorage.removeItem(key);
+          i--;
+        }
+      }
+      window.location.href = '/';
+    }
+
     const participantState = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
     if (!participantState.topic) {
       window.location.replace('/');

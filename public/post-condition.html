@@ -12,7 +12,7 @@
 
     
     .round-header { text-align: center; margin-bottom: 1.5rem; flex-shrink: 0; }
-    .round-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 99px; padding: 0.35rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--gold); margin-bottom: 0.5rem; }
+    .round-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: transparent; border: none; padding: 0; font-size: 0.8rem; font-weight: 700; color: var(--gold); margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; }
     .round-header h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--text-primary); margin-bottom: 0.4rem; }
     .round-header p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
 
@@ -58,7 +58,7 @@
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <a href="/" class="site-logo">
+      <a href="/" class="site-logo" onclick="handleLogoClick(event)">
         <div class="site-logo-icon">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
             <rect width="36" height="36" rx="10" fill="url(#lg4)"/>
@@ -201,7 +201,7 @@
       <div class="card survey-card">
         <div class="survey-question">
           <div class="survey-q-tag">Logic & Bias</div>
-          <div class="survey-q-text">"The AI’s arguments felt logically sound and unbiased."</div>
+          <div class="survey-q-text">"The AI’s arguments felt reasonable and unbiased."</div>
           <div class="likert-container">
             <div class="likert-options" id="likert-respectfulness"></div>
             <div class="likert-labels-row"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
@@ -234,6 +234,20 @@
   </div>
 
   <script>
+    function handleLogoClick(e) {
+      e.preventDefault();
+      localStorage.removeItem('dc_participant_id');
+      localStorage.removeItem('dc_participant_state');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('debate_session_')) {
+          localStorage.removeItem(key);
+          i--;
+        }
+      }
+      window.location.href = '/';
+    }
+
     const params = new URLSearchParams(location.search);
     const condition = params.get('condition') || 'A';
 

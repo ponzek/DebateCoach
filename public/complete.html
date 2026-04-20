@@ -37,7 +37,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a href="/" class="site-logo">
+    <a href="/" class="site-logo" onclick="handleLogoClick(event)">
       <div class="site-logo-icon">
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
           <rect width="36" height="36" rx="10" fill="url(#lg4)"/>
@@ -74,6 +74,20 @@
   </div>
 
   <script>
+    function handleLogoClick(e) {
+      e.preventDefault();
+      localStorage.removeItem('dc_participant_id');
+      localStorage.removeItem('dc_participant_state');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('debate_session_')) {
+          localStorage.removeItem(key);
+          i--;
+        }
+      }
+      window.location.href = '/';
+    }
+
     // Show participant ID if available
     const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
     if (ps.participantId) {

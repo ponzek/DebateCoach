@@ -329,6 +329,10 @@
       margin-bottom: 0.5rem;
     }
     .transition-sub { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; line-height: 1.4; }
+    .message-ai .message-bubble.condition-c { 
+      line-height: 1.4; 
+      padding-bottom: 0.75rem;
+    }
     .next-cond-badge {
       display: inline-flex; align-items: center; gap: 0.4rem;
       background: var(--gold-dim); border: 1px solid var(--border);
@@ -380,7 +384,7 @@
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <a href="/" class="site-logo">
+      <a href="/" class="site-logo" onclick="handleLogoClick(event)">
         <div class="site-logo-icon">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="36" height="36" rx="10" fill="url(#lg2)"/>
@@ -505,6 +509,20 @@
   </div>
 
   <script>
+    function handleLogoClick(e) {
+      e.preventDefault();
+      localStorage.removeItem('dc_participant_id');
+      localStorage.removeItem('dc_participant_state');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('debate_session_')) {
+          localStorage.removeItem(key);
+          i--;
+        }
+      }
+      window.location.href = '/';
+    }
+
     const params = new URLSearchParams(location.search);
     const sessionId = params.get('s');
 
@@ -733,48 +751,43 @@
         // We look for common transition words that start second paragraphs like "Moreover", "Furthermore", "Additionally"
         // and ensure they start a new paragraph.
         cleaned = cleaned.replace(/([.!?])\s+(Moreover|Furthermore|Additionally|Secondly|In addition)/g, '$1\n\n$2');
+        // Bold any parenthetical citations (e.g. "(Author, Year)") and the title if it's immediately before it
+        cleaned = cleaned.replace(/"([^"]+)"\s*(,?)\s*\((\s*[^)]*?\d{4}[^)]*?\s*)\)/g, '**"$1"$2 ($3)**');
+        cleaned = cleaned.replace(/\((\s*[^)]*?\d{4}[^)]*?\s*)\)(?!\*\*)/g, '**($1)**');
       }
       
       if (condition === 'C') {
-        // 1. Initial Numbering Cleanup (Fixes "1. 1." issues up front)
+        // 1. Initial Numbering Cleanup
         cleaned = cleaned.replace(/^(\d+\.)\s+(\d+\.)/gm, '$2');
         
-        // 2. Anti-Smush Logic: Detect points hidden after sentences or other points
-        // Handles transitions like "). 2." or "2023. 2."
-        cleaned = cleaned.replace(/([.)!?])\s+(\d+\.)/g, '$1\n\n$2');
-        cleaned = cleaned.replace(/([^\n])\n(\d+\.)/g, '$1\n\n$2');
-
-        // 3. Citation Bolding: Bold the entire block INCLUDING parentheses
-        // Catches anything in parens that looks like a citation (Source/Title/Year)
+        // 2. Formatting: Bold keys and bold citations
         cleaned = cleaned.replace(/\((\s*[^)]*?\d{4}[^)]*?\s*)\)/g, '**($1)**');
-
-        // 4. Header Bolding & Yellow Color Logic
-        // Ensures format is: **Number. Title** :
-        // We wrap the number inside the bold tags so CSS :first-child highlights it yellow.
         cleaned = cleaned.replace(/^(\d+\.\s+)([^:*]+)([:])/gm, '**$1$2**$3');
         cleaned = cleaned.replace(/^(\d+\.\s+)([A-Z][^.\n]{2,40})(?!\*\*)/gm, '**$1$2**');
-
-        // 5. Cleanup redundant bolding e.g. ****(Source, 2023)****
         cleaned = cleaned.replace(/\*\*\*\*+/g, '**');
 
-        // 6. Intro and Outro EXTRA spacing (4 newlines total)
-        cleaned = cleaned.replace(/^(.+?)\n\n(\d+\.)/m, '$1\n\n\n\n$2');
-        
-        const lines = cleaned.split('\n');
-        let lastPt = -1;
+        // 3. Spacing: Stack numbered points and strictly 1 line of gap for intro/outro
+        const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l !== '');
+        let pointsStart = -1;
+        let pointsEnd = -1;
         for (let i = 0; i < lines.length; i++) {
-          if (/^\d+\./.test(lines[i].trim())) lastPt = i;
-        }
-        if (lastPt !== -1 && lastPt < lines.length - 1) {
-          const nextLine = lines[lastPt + 1].trim();
-          if (nextLine !== '' && !/^\d+\./.test(nextLine)) {
-            // Found closing sentence. Add three empty lines for extra spacing.
-            lines.splice(lastPt + 1, 0, '', '', '');
+          if (/^\d+\./.test(lines[i])) {
+            if (pointsStart === -1) pointsStart = i;
+            pointsEnd = i;
           }
         }
-        cleaned = lines.join('\n');
+        if (pointsStart !== -1) {
+          const intro = lines.slice(0, pointsStart);
+          const points = lines.slice(pointsStart, pointsEnd + 1);
+          const outro = lines.slice(pointsEnd + 1);
+          let result = '';
+          if (intro.length > 0) result += intro.join('\n\n') + '\n\n';
+          result += points.join('\n');
+          if (outro.length > 0) result += '\n\n' + outro.join('\n\n');
+          cleaned = result;
+        }
       }
-      return cleaned;
+      return cleaned.trim();
     }
 
     let _typingTimer = null;
@@ -960,6 +973,7 @@
 
         // disclaimer as the first sentence
         const finalAiText = `This is the first of our 5 exchanges for this round. ` + aiText;
+        bubble.classList.add('condition-' + currentCondition.toLowerCase());
         bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
 
         messages.push({ role: 'assistant', content: aiText });
@@ -1026,11 +1040,12 @@
         let finalAiText = aiText.trim();
 
         if (exchanges === 3) {
-          finalAiText += ` By the way, after you send your next prompt, the message I send you after will be the end of the exchanges for this round!`;
+          finalAiText += ` By the way, after you send your next message for this exchange, the message I send you after will be the end of the exchanges for this round!`;
         } else if (exchanges === 4) {
           finalAiText += ` That wraps up our exchanges for this round! Click the button below to continue.`;
         }
 
+        bubble.classList.add('condition-' + currentCondition.toLowerCase());
         bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
         console.log(`[VERIFY] Delivered message for Round ${exchanges} (Condition ${currentCondition})`);
 
@@ -1077,11 +1092,12 @@
               document.getElementById('streaming-bubble')?.removeAttribute('id');
               let finalAiText = aiText;
               if (exchanges === 3) {
-                finalAiText = aiText + `\n\nBy the way, after you send your next prompt, the message I send you after will be the end of the exchanges for this round!`;
+                finalAiText = aiText + `\n\nBy the way, after you send your next message for this exchange, the message I send you after will be the end of the exchanges for this round!`;
               } else if (exchanges === 4) {
                 finalAiText = aiText + `\n\nThat wraps up our exchanges for this round! Click the button below to continue.`;
               }
-              bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
+        bubble.classList.add('condition-' + currentCondition.toLowerCase());
+        bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
               messages.push({ role: 'assistant', content: finalAiText });
               exchanges++;
               persistMessages();
@@ -1200,7 +1216,10 @@
 
       for (const m of messages) {
         const bubble = renderMessage(m.role, m.content);
-        if (m.role === 'assistant') bubble.innerHTML = marked.parse(m.content);
+        if (m.role === 'assistant') {
+          bubble.classList.add('condition-' + currentCondition.toLowerCase());
+          bubble.innerHTML = marked.parse(cleanAiResponse(m.content, currentCondition));
+        }
       }
 
       document.getElementById('exchangeCount').textContent = exchanges;
