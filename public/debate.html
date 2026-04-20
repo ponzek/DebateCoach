@@ -102,11 +102,11 @@
     /* ChatGPT-style input bar - centered with margins */
     .chat-input-zone {
       flex-shrink: 0;
-      padding: 0 1.5rem 0.5rem;
+      padding: 0 calc(1.5rem + 15px) 0.5rem;
       background: linear-gradient(to top, rgba(13,27,42,1) 60%, rgba(13,27,42,0));
     }
     .chat-input-inner {
-      max-width: 748px;
+      max-width: 718px;
       margin: 0 auto;
       background: rgba(26,45,66,0.9);
       border: 1px solid var(--border-subtle);
@@ -128,10 +128,10 @@
       color: var(--text-primary);
       font-family: 'Inter', sans-serif;
       font-size: 0.95rem;
-      padding: 1.4rem 1rem 0.1rem;
+      padding: 20px 1rem 0.1rem;
       outline: none;
       resize: none;
-      min-height: 50px;
+      height: 50px;
       max-height: 200px;
       line-height: 1.5;
     }
@@ -718,6 +718,44 @@
       return bubble;
     }
 
+    /**
+     * Post-processes AI text to fix formatting quirks (specifically for Condition C).
+     */
+    function cleanAiResponse(text, condition) {
+      if (!text) return text;
+      let cleaned = text;
+      
+      if (condition === 'C') {
+        // 1. Remove doubled numbering
+        cleaned = cleaned.replace(/^(\d+\.)\s+(\*\*|#)\s*(\d+\.)/gm, '$2$3');
+        cleaned = cleaned.replace(/^(\d+\.)\s+(\d+\.)/gm, '$2');
+
+        // 2. Comprehensive bolding for citations: **(Source, "Title", Year)**
+        // Bolds parentheses, source, title, and year.
+        cleaned = cleaned.replace(/\(([^,]+),\s*"([^"]+)",\s*(\d{4})\)/g, '**($1, "$2", $3)**');
+
+        // 3. Add more spacing for opening and closing sentences
+        const lines = cleaned.split('\n');
+        let firstPt = -1;
+        let lastPt = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (/^\d+\./.test(lines[i].trim())) {
+            if (firstPt === -1) firstPt = i;
+            lastPt = i;
+          }
+        }
+        if (firstPt > 0 && lines[firstPt - 1].trim() !== '') {
+          lines.splice(firstPt, 0, '');
+          lastPt++;
+        }
+        if (lastPt !== -1 && lastPt < lines.length - 1 && lines[lastPt + 1].trim() !== '') {
+          lines.splice(lastPt + 1, 0, '');
+        }
+        cleaned = lines.join('\n');
+      }
+      return cleaned;
+    }
+
     let _typingTimer = null;
 
     function showTyping() {
@@ -910,7 +948,7 @@
         document.getElementById('streaming-bubble')?.removeAttribute('id');
 
         const finalAiText = `This is the first of our 5 exchanges for this round.\n\n` + aiText;
-        bubble.innerHTML = marked.parse(finalAiText);
+        bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
 
         messages.push({ role: 'assistant', content: aiText });
         persistMessages();
@@ -951,7 +989,7 @@
         document.getElementById('streaming-bubble')?.removeAttribute('id');
 
         const finalAiText = aiText;
-        bubble.innerHTML = marked.parse(finalAiText);
+        bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
 
         messages.push({ role: 'assistant', content: finalAiText });
         persistMessages();
@@ -1022,7 +1060,7 @@
           finalAiText = aiText + `\n\nThat wraps up our exchanges for this round! Click the button below to continue.`;
         }
 
-        bubble.innerHTML = marked.parse(finalAiText);
+        bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
         console.log(`[VERIFY] Delivered message for Round ${exchanges} (Condition ${currentCondition})`);
 
         messages.push({ role: 'assistant', content: finalAiText });
@@ -1072,7 +1110,7 @@
               } else if (exchanges === 4) {
                 finalAiText = aiText + `\n\nThat wraps up our exchanges for this round! Click the button below to continue.`;
               }
-              bubble.innerHTML = marked.parse(finalAiText);
+              bubble.innerHTML = marked.parse(cleanAiResponse(finalAiText, currentCondition));
               messages.push({ role: 'assistant', content: finalAiText });
               exchanges++;
               persistMessages();
