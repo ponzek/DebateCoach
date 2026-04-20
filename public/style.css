@@ -53,12 +53,43 @@ body {
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   padding: 0 1.5rem;
-  height: 60px;
+  height: 64px; /* Slightly taller for breathing room */
+  display: flex;
+  justify-content: center;
+  z-index: 1000; /* Ensure it stays above everything */
+  position: relative;
+}
+.site-header-inner {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  z-index: 100;
+  position: relative;
 }
+.header-meta {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  opacity: 0.85;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+/* Hide metadata earlier to prevent logo/nav collisions on laptop/tablet */
+@media (max-width: 1200px) {
+  .header-meta { display: none; }
+}
+@media (max-width: 600px) {
+  .site-header { padding: 0 1rem; height: 56px; }
+  .site-logo-text { font-size: 1.1rem; }
+  .site-logo-icon svg { width: 30px; height: 30px; }
+}
+
 .site-logo {
   display: flex;
   align-items: center;
@@ -341,14 +372,19 @@ body {
   line-height: 1.6;
   font-size: 0.95rem;
 }
-.message-bubble p { margin-bottom: 1rem; }
+.message-bubble p { margin-bottom: 0.25rem; }
 .message-bubble p:last-child { margin-bottom: 0; }
-.message-bubble ul, .message-bubble ol { margin: 0.5rem 0 1rem 1.25rem; }
-.message-bubble li { margin-bottom: 0.4rem; }
+.message-bubble ul, .message-bubble ol { margin: 1.75rem 0 2.2rem 1.15rem; }
+.message-bubble ol + p, .message-bubble ul + p { margin-top: 1.5rem; }
+.message-bubble li { margin-bottom: 0.15rem; }
 .message-bubble strong { font-weight: 700; }
 .message-ai .message-bubble p > strong:first-child,
-.message-ai .message-bubble li > strong:first-child {
-  color: var(--gold-light);
+.message-ai .message-bubble li > strong:first-child,
+.message-ai .message-bubble li > b:first-child {
+  color: #fed33f; /* Brighter bold yellow for titles */
+  font-size: 1rem;
+  display: inline; /* Keep on same line for efficiency */
+  margin-right: 0.3rem;
 }
 .message-user .message-bubble {
   background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.12));

@@ -102,11 +102,11 @@
     /* ChatGPT-style input bar - centered with margins */
     .chat-input-zone {
       flex-shrink: 0;
-      padding: 0.25rem 1.5rem 0.5rem;
+      padding: 0 1.5rem 0.5rem;
       background: linear-gradient(to top, rgba(13,27,42,1) 60%, rgba(13,27,42,0));
     }
     .chat-input-inner {
-      max-width: 768px;
+      max-width: 748px;
       margin: 0 auto;
       background: rgba(26,45,66,0.9);
       border: 1px solid var(--border-subtle);
@@ -128,10 +128,10 @@
       color: var(--text-primary);
       font-family: 'Inter', sans-serif;
       font-size: 0.95rem;
-      padding: 0.5rem 1rem 0.1rem;
+      padding: 1.4rem 1rem 0.1rem;
       outline: none;
       resize: none;
-      min-height: 34px;
+      min-height: 50px;
       max-height: 200px;
       line-height: 1.5;
     }
@@ -305,13 +305,15 @@
     }
     .transition-overlay.visible { display: flex; }
     .transition-card {
-      background: rgba(26,45,66,0.9);
+      background: rgba(26,45,66,0.95);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 2.5rem;
-      max-width: 440px;
+      padding: 0.8rem 2rem;
+      max-width: 480px;
       width: 90%;
       text-align: center;
+      box-shadow: 0 12px 64px rgba(0,0,0,0.7);
+      transform: translateY(30px);
     }
     .transition-icon {
       width: 56px; height: 56px;
@@ -326,44 +328,86 @@
       color: var(--text-primary);
       margin-bottom: 0.5rem;
     }
-    .transition-sub { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.55; }
+    .transition-sub { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; line-height: 1.4; }
     .next-cond-badge {
       display: inline-flex; align-items: center; gap: 0.4rem;
       background: var(--gold-dim); border: 1px solid var(--border);
-      border-radius: 99px; padding: 0.3rem 0.9rem;
-      font-size: 0.8rem; font-weight: 700; color: var(--gold);
-      margin-bottom: 1.5rem;
+      border-radius: 99px; padding: 0.25rem 0.75rem;
+      font-size: 0.75rem; font-weight: 700; color: var(--gold);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Dev Shortcut Styles in Modal */
+    .modal-dev-shortcuts {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px dashed rgba(201,168,76,0.25);
+      display: none; /* Shown via JS */
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .modal-dev-title {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+    .modal-dev-grid {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .modal-dev-btn {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .modal-dev-btn:hover {
+      background: var(--gold-dim);
+      color: var(--gold);
+      border-color: var(--gold);
     }
   </style>
 </head>
 <body>
   <header class="site-header">
-    <a href="/" class="site-logo">
-      <div class="site-logo-icon">
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="36" height="36" rx="10" fill="url(#lg2)"/>
-          <line x1="18" y1="8" x2="18" y2="26" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="11" y1="28" x2="25" y2="28" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="18" y1="11" x2="10" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="18" y1="11" x2="26" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M6 15 Q10 22 14 15" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-          <path d="M22 15 Q26 22 30 15" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-          <defs>
-            <linearGradient id="lg2" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#c9a84c"/><stop offset="1" stop-color="#e8c76a"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      <span class="site-logo-text">Debate<span>Coach</span></span>
-    </a>
-    <nav class="site-nav">
-      <span id="conditionBadge" class="badge badge-b">Round 1</span>
-      <a href="/" class="btn btn-ghost" style="padding:0.35rem 0.8rem;font-size:0.8rem;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        New Debate
+    <div class="site-header-inner">
+      <a href="/" class="site-logo">
+        <div class="site-logo-icon">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="36" height="36" rx="10" fill="url(#lg2)"/>
+            <line x1="18" y1="8" x2="18" y2="26" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="11" y1="28" x2="25" y2="28" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="18" y1="11" x2="10" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="18" y1="11" x2="26" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M6 15 Q10 22 14 15" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <path d="M22 15 Q26 22 30 15" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="lg2" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#c9a84c"/><stop offset="1" stop-color="#e8c76a"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="site-logo-text">Debate<span>Coach</span></span>
       </a>
-    </nav>
+      <div class="header-meta">Group 44 &middot; Spring 2026 &middot; HCI Research Prototype</div>
+      <nav class="site-nav">
+        <span id="conditionBadge" class="badge badge-b">Round 1</span>
+        <a href="/" class="btn btn-ghost" style="padding:0.35rem 0.8rem;font-size:0.8rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          New Debate
+        </a>
+      </nav>
+    </div>
   </header>
 
   <div class="debate-layout">
@@ -412,25 +456,39 @@
     </div>
   </div>
 
-  <!-- Stance overlay - shown conditionally before first condition -->
   <div class="transition-overlay" id="stanceOverlay">
-    <div class="transition-card" style="max-width:480px;">
+    <div class="transition-card">
       <div class="transition-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       </div>
       <div class="transition-title">State Your Position</div>
       <div class="transition-sub">Before the debate begins, briefly state your position on the topic below. The AI will argue the opposing side and open first. You will have <strong>5 exchanges</strong>  - after the 5th, a button will appear. Click it to continue to the survey.</div>
-      <div style="background:rgba(13,27,42,0.6);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.25rem;text-align:left;">
-        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Topic</div>
-        <div style="font-size:0.9rem;color:var(--text-primary);font-weight:500;" id="overlayTopicText"></div>
+      
+      <div style="background:rgba(13,27,42,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.75rem 1rem;margin-bottom:0.75rem;text-align:left;">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Topic</div>
+        <div style="font-size:0.95rem;color:var(--text-primary);font-weight:500;" id="overlayTopicText"></div>
       </div>
-      <input type="text" id="stanceOverlayInput" placeholder="I believe that..." maxlength="150"
-        style="width:100%;box-sizing:border-box;background:rgba(13,27,42,0.7);border:1px solid var(--border-subtle);border-radius:8px;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:0.95rem;padding:0.85rem 1rem;outline:none;margin-bottom:1.25rem;transition:border-color 0.2s;"
-      />
+      
+      <div style="background:rgba(13,27,42,0.6);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;text-align:left;">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Stance</div>
+        <textarea id="stanceOverlayInput" placeholder="I believe that..." maxlength="150" rows="2"
+          style="width:100%;box-sizing:border-box;background:transparent;border:none;color:var(--text-primary);font-family:'Inter',sans-serif;font-size:1rem;padding:0;outline:none;transition:border-color 0.2s;resize:none;line-height:1.4;"
+        ></textarea>
+      </div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="submitStance()">
         Begin Debate
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </button>
+
+      <!-- Dev Controls -->
+      <div class="modal-dev-shortcuts" id="modalDevShortcuts">
+        <div class="modal-dev-title">Dev: Override Start Condition</div>
+        <div class="modal-dev-grid">
+          <button class="modal-dev-btn" id="devBtnA" onclick="toggleDevCondition('A')">Start @ A</button>
+          <button class="modal-dev-btn" id="devBtnB" onclick="toggleDevCondition('B')">Start @ B</button>
+          <button class="modal-dev-btn" id="devBtnC" onclick="toggleDevCondition('C')">Start @ C</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -454,13 +512,24 @@
     const params = new URLSearchParams(location.search);
     const sessionId = params.get('s');
 
-    // Guard: redirect home if there is no valid session in storage
-    if (!sessionId || !localStorage.getItem('debate_session_' + sessionId)) {
+    const state = JSON.parse(localStorage.getItem('debate_session_' + sessionId) || '{}');
+    const participantState = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+
+    // NEW GUARD: If master state is missing critical info, redirect to setup
+    if (!participantState.topic) {
+      console.warn('Missing master topic, redirecting to setup');
       window.location.replace('/');
     }
 
-    const state = JSON.parse(localStorage.getItem('debate_session_' + sessionId) || '{}');
-    const participantState = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+    // RECONCILE: Always ensure current session matches the master topic
+    if (state.topic !== participantState.topic) {
+        state.topic = participantState.topic;
+    }
+    // If master stance exists but session doesn't, sync it
+    if (participantState.stance && !state.stance) {
+        state.stance = participantState.stance;
+    }
+
 
     const REQUIRED_EXCHANGES = 5;
     const participantStateInit = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
@@ -485,6 +554,30 @@
         e.returnValue = '';
       }
     });
+
+    let selectedDevCondition = null;
+
+    function toggleDevCondition(cond) {
+      if (selectedDevCondition === cond) {
+        selectedDevCondition = null;
+      } else {
+        selectedDevCondition = cond;
+      }
+      
+      // Update visual state
+      ['A', 'B', 'C'].forEach(c => {
+        const btn = document.getElementById('devBtn' + c);
+        if (selectedDevCondition === c) {
+          btn.style.borderColor = 'var(--gold)';
+          btn.style.background = 'rgba(201,168,76,0.15)';
+          btn.style.color = 'var(--gold)';
+        } else {
+          btn.style.borderColor = '';
+          btn.style.background = '';
+          btn.style.color = '';
+        }
+      });
+    }
 
     async function fetchWithRetry(url, options, maxRetries = 3) {
       let delay = 2000;
@@ -725,6 +818,11 @@
     }
 
     function submitStance() {
+      if (selectedDevCondition) {
+        submitStanceSpecific(selectedDevCondition);
+        return;
+      }
+
       const input = document.getElementById('stanceOverlayInput');
       const stance = input.value.trim();
       if (!stance) {
@@ -733,16 +831,63 @@
         input.focus();
         return;
       }
-      state.stance = stance;
       localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
-      // Persist stance to participant state so conditions 2 & 3 reuse it
+      // Persist stance to participant state so rounds 2 & 3 reuse it
       const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
       ps.stance = stance;
       localStorage.setItem('dc_participant_state', JSON.stringify(ps));
+      
       document.getElementById('stanceOverlay').classList.remove('visible');
       setStanceDisplay(stance);
-      openDebate(stance);
+      
+      // Proceed with normal flow
+      if (currentCondition === 'A') {
+        sendStanceAsFirstMessage(stance);
+      } else {
+        openDebate(stance);
+      }
     }
+
+    function submitStanceSpecific(cond) {
+      const input = document.getElementById('stanceOverlayInput');
+      const stance = input.value.trim();
+      if (!stance) {
+        input.style.borderColor = 'var(--red)';
+        setTimeout(() => { input.style.borderColor = ''; }, 2000);
+        input.focus();
+        return;
+      }
+
+      // Update current session to the chosen condition
+      currentCondition = cond;
+      state.condition = cond;
+      localStorage.setItem('debate_session_' + sessionId, JSON.stringify(state));
+
+      // Prep participant state to look like we've done previous rounds
+      const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
+      ps.stance = stance;
+      ps.conditionsDone = cond === 'A' ? [] : (cond === 'B' ? ['A'] : ['A', 'B']);
+      localStorage.setItem('dc_participant_state', JSON.stringify(ps));
+
+      document.getElementById('stanceOverlay').classList.remove('visible');
+      updateConditionBadge(cond);
+      updateProgressSteps(ps.conditionsDone);
+      setStanceDisplay(stance);
+      
+      if (cond === 'A') {
+        sendStanceAsFirstMessage(stance);
+      } else {
+        openDebate(stance);
+      }
+    }
+
+    // Show dev tools in modal if local or ?dev=1
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isDevMode = new URLSearchParams(window.location.search).has('dev');
+    if (isLocal || isDevMode) {
+      document.getElementById('modalDevShortcuts').style.display = 'flex';
+    }
+
 
     async function sendStanceAsFirstMessage(stance) {
       debateActive = true;

@@ -102,20 +102,20 @@
   document.head.appendChild(styleEl);
 
   window.devJumpToCond = function(cond) {
+    const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
     const sid = 'dev_' + cond.toLowerCase();
     const mockState = {
       sessionId: sid,
-      participantId: 'DEV_USER',
-      topic: 'Universal Basic Income',
+      participantId: ps.participantId || 'DEV_USER',
+      topic: ps.topic || 'Universal Basic Income',
       condition: cond,
       startedAt: new Date().toISOString()
     };
     localStorage.setItem('debate_session_' + sid, JSON.stringify(mockState));
     
     // Ensure participant state exists
-    const ps = JSON.parse(localStorage.getItem('dc_participant_state') || '{}');
-    ps.participantId = 'DEV_USER';
-    ps.topic = 'Universal Basic Income';
+    ps.participantId = ps.participantId || 'DEV_USER';
+    ps.topic = ps.topic || 'Universal Basic Income';
     if (!ps.conditionsDone) ps.conditionsDone = [];
     localStorage.setItem('dc_participant_state', JSON.stringify(ps));
 
